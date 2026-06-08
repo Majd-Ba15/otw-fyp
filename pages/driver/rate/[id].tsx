@@ -21,12 +21,16 @@ export default function RateRiders() {
       notifAPI.getUnreadCount(),
     ]).then(([p, pas, n]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
+
+      // Only show confirmed/completed bookings with valid rider data
       const pasData = pas.status === 'fulfilled' ? (pas.value.data || []) : []
-      setPassengers(pasData.length > 0 ? pasData : [
-        { bookingId:1, rider:{ fullName:'Ahmad Karim', initials:'AK', userId:101 }, pickupNote:'Gate A' },
-        { bookingId:2, rider:{ fullName:'Fatimah Ali', initials:'FA', userId:102 }, pickupNote:'Faculty Lobby' },
-        { bookingId:3, rider:{ fullName:'Lee Wei Ming', initials:'LW', userId:103 }, pickupNote:'Main Entrance' },
-      ])
+      const realPassengers = pasData.filter((p: any) => {
+        if (!p.rider || !p.rider.fullName) return false
+        if (p.status !== 'Confirmed' && p.status !== 'Completed') return false
+        return true
+      })
+
+      setPassengers(realPassengers.length > 0 ? realPassengers : [])
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
       setLoading(false)
     })
@@ -40,7 +44,15 @@ export default function RateRiders() {
     try {
       await Promise.all(passengers.map(p => {
         const r = ratings[p.bookingId]
-        if (r?.rating) return ratingAPI.rate({ bookingId:p.bookingId, rating:r.rating, comment:r.comment, ratedUserId:p.rider?.userId })
+        if (r?.rating) {
+          const payload: any = {
+            bookingId: p.bookingId,
+            stars: r.rating,
+            ratedUserId: p.rider?.userId,
+          }
+          if (r.comment) payload.comment = r.comment
+          return ratingAPI.rate(payload)
+        }
         return Promise.resolve()
       }))
       toast.success('Ratings submitted! Thank you.')
@@ -59,7 +71,11 @@ export default function RateRiders() {
         <p style={{fontSize:13,color:'var(--text3)',marginBottom:16}}>Ride #{id}</p>
 
         {loading ? (
-          <div style={{textAlign:'center',padding:'40px',color:'var(--text3)',fontSize:13}}>Loading...</div>
+          <div style={{textAlign:'center',padding:'40px',color:'var(--text3)',fontSize:13}}>Loading passengers...</div>
+        ) : passengers.length === 0 ? (
+          <div className="card" style={{textAlign:'center',padding:'40px'}}>
+            <div style={{fontSize:13,color:'var(--text3)'}}>No confirmed riders to rate yet.</div>
+          </div>
         ) : passengers.map(p => (
           <div key={p.bookingId} className="card" style={{marginBottom:10}}>
             <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>

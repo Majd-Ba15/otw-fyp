@@ -32,14 +32,15 @@ export default function BookingRequests() {
     const req = requests.find(r => r.bookingId === id)
     try { await bookingAPI.accept(id) } catch {}
     setRequests(p => p.filter(r => r.bookingId !== id))
-    // Save to local earnings log so earnings page can display it
-    if (req) {
+    // Save to local earnings log so earnings page can display it (only on confirmed)
+    if (req && req.ride) {
       try {
+        const totalAmount = (req.seatsBooked || 1) * (req.ride.pricePerSeat || 0)
         const earning = {
           id: `earn_${Date.now()}`,
-          label: `${req.ride?.fromLocation || '?'} → ${req.ride?.toLocation || '?'}`,
+          label: `${req.ride.fromLocation || '?'} → ${req.ride.toLocation || '?'}`,
           passenger: req.rider?.fullName || 'Rider',
-          amount: req.ride?.pricePerSeat || 0,
+          amount: totalAmount,
           time: new Date().toISOString(),
           type: 'earn',
         }

@@ -4,12 +4,6 @@ import Layout, { I } from '../../../components/layout/Layout'
 import { ratingAPI, bookingAPI, userAPI } from '../../../services/api'
 import toast from 'react-hot-toast'
 
-const MOCK_BOOKINGS = [
-  { bookingId:1, driver:{ fullName:'Sarah Tan',   initials:'ST', userId:10, averageRating:4.9 }, ride:{ fromLocation:'UTM Main Gate',       toLocation:'KL Sentral',   departureTime:'2024-01-10T17:30:00' } },
-  { bookingId:2, driver:{ fullName:'Ahmad Rizal', initials:'AR', userId:11, averageRating:4.7 }, ride:{ fromLocation:'Faculty of Computing', toLocation:'Paradigm Mall', departureTime:'2024-01-08T09:00:00' } },
-  { bookingId:3, driver:{ fullName:'Nurul Huda',  initials:'NH', userId:12, averageRating:4.8 }, ride:{ fromLocation:'UTM Main Gate',       toLocation:'JB Sentral',   departureTime:'2024-01-05T16:00:00' } },
-]
-
 const TAGS   = ['Punctual','Friendly','Clean car','Safe driver','Good conversation','Comfortable ride']
 const LABELS = ['','Terrible','Poor','Fair','Good','Excellent']
 
@@ -30,25 +24,38 @@ export default function RateDriver() {
   useEffect(() => {
     Promise.allSettled([
       userAPI.getMe(),
-      bookingAPI.getHistory('Completed'),
+      bookingAPI.getHistory(),
     ]).then(([p, h]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
 
-      const list: any[] = h.status === 'fulfilled' ? (h.value.data || []) : []
-      const finalList = list.length > 0 ? list : MOCK_BOOKINGS
-      setBookings(finalList)
+      let list: any[] = h.status === 'fulfilled' ? (h.value.data || []) : []
+      // Only show completed/confirmed bookings with valid ride and driver data
+      const completedList = list.filter((b: any) => {
+        if (b.status !== 'Completed' && b.status !== 'Confirmed') return false
+        if (!b.ride || !b.ride.driver) return false
+        if (!b.ride.driver.fullName) return false
+        return true
+      })
+      setBookings(completedList)
 
       // Pre-select if id was provided in URL
-      if (id) {
-        const found = finalList.find((b: any) => String(b.bookingId) === String(id) || String(b.id) === String(id))
-        if (found) setSelected(found)
+      if (id && completedList.length > 0) {
+        const found = completedList.find((b: any) => String(b.bookingId) === String(id) || String(b.id) === String(id))
+        if (found) {
+          setSelected({ ...found, driver: found.ride?.driver })
+        }
       }
       setLoadingB(false)
     })
   }, [id])
 
   const select = (booking: any) => {
-    setSelected(booking)
+    // Always use ride.driver as the source of truth
+    const selectedBooking = {
+      ...booking,
+      driver: booking.ride?.driver,
+    }
+    setSelected(selectedBooking)
     setRating(0)
     setHovered(0)
     setTags([])
@@ -62,13 +69,18 @@ export default function RateDriver() {
     if (!rating)   { toast.error('Please select a rating'); return }
     setLoading(true)
     try {
-      await ratingAPI.rate({
-        bookingId:   selected.bookingId || selected.id,
-        rating,
-        comment,
-        tags,
-        ratedUserId: selected.driver?.userId || selected.driverId,
-      })
+      const driverUserId = selected.ride?.driver?.userId
+      if (!driverUserId) { toast.error('Driver information not available'); setLoading(false); return }
+
+      const payload: any = {
+        stars: rating,
+        bookingId: selected.bookingId,
+        ratedUserId: driverUserId,
+      }
+      if (comment) payload.comment = comment
+      if (tags?.length > 0) payload.tags = tags.join(',')
+
+      await ratingAPI.rate(payload)
       toast.success('Rating submitted! Thank you.')
       router.push('/rider/history')
     } catch (e: any) {
@@ -102,11 +114,11 @@ export default function RateDriver() {
             <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
               {bookings.map((b: any, i: number) => {
                 const isSelected = selected && (selected.bookingId || selected.id) === (b.bookingId || b.id)
-                const driverName = b.driver?.fullName || b.driverName || 'Driver'
-                const driverInit = b.driver?.initials || driverName.slice(0, 2).toUpperCase()
-                const from = b.ride?.fromLocation || b.fromLocation || ''
-                const to   = b.ride?.toLocation   || b.toLocation   || ''
-                const date = b.ride?.departureTime || b.departureTime || ''
+                const driverName = b.ride?.driver?.fullName || 'Driver'
+                const driverInit = (b.ride?.driver?.fullName || 'DR').slice(0, 2).toUpperCase()
+                const from = b.ride?.fromLocation || ''
+                const to   = b.ride?.toLocation   || ''
+                const date = b.ride?.departureTime || ''
                 return (
                   <div key={b.bookingId || b.id}
                     onClick={() => select(b)}
@@ -141,10 +153,10 @@ export default function RateDriver() {
                     </div>
 
                     {/* Rating */}
-                    {b.driver?.averageRating && (
+                    {b.ride?.driver?.averageRating && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 12, color: '#F59E0B', flexShrink: 0 }}>
                         <span style={{ width: 12, height: 12, display: 'flex' }}>{I.starF}</span>
-                        {b.driver.averageRating}
+                        {b.ride?.driver?.averageRating}
                       </div>
                     )}
                   </div>
@@ -162,10 +174,10 @@ export default function RateDriver() {
             {/* Selected driver header */}
             <div style={{ textAlign: 'center', marginBottom: 20 }}>
               <div className="av av-xl" style={{ margin: '0 auto 12px' }}>
-                {selected.driver?.initials || (selected.driver?.fullName || 'DR').slice(0, 2).toUpperCase()}
+                {(selected.ride?.driver?.fullName || 'DR').slice(0, 2).toUpperCase()}
               </div>
               <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>
-                {selected.driver?.fullName || 'Driver'}
+                {selected.ride?.driver?.fullName || 'Driver'}
               </div>
               <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 3 }}>
                 {selected.ride?.fromLocation || selected.fromLocation} → {selected.ride?.toLocation || selected.toLocation}

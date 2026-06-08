@@ -10,18 +10,30 @@ export default function Earnings() {
   const [period,       setPeriod]       = useState('This Week')
   const [unread,       setUnread]       = useState(0)
   const [loading,      setLoading]      = useState(true)
+  const [realEarnings, setRealEarnings] = useState(0)
 
   useEffect(() => {
+    // Calculate real earnings from localStorage (client-side only)
+    if (typeof window !== 'undefined') {
+      const localLog = JSON.parse(localStorage.getItem('otw_earnings_log') || '[]')
+      const totalEarnings = localLog.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0)
+      setRealEarnings(totalEarnings)
+    }
+
     Promise.allSettled([
       userAPI.getMe(),
       userAPI.getStats(),
       notifAPI.getUnreadCount(),
     ]).then(([p, s, n]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
+
+      // Use real earnings from localStorage
+      const localLog = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem('otw_earnings_log') || '[]') : []
+      const totalEarnings = localLog.reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0)
+
       if (s.status === 'fulfilled') {
-        setStats(s.value.data)
-        // Build transactions from ride history in stats if available
-        const localLog = JSON.parse(localStorage.getItem('otw_earnings_log') || '[]')
+        // Use API stats but override earnings with real calculated value
+        setStats({ ...s.value.data, earnings: totalEarnings })
         const apiTx = s.value.data?.recentTransactions || []
         const merged = [
           ...localLog.map((e: any, i: number) => ({
@@ -33,19 +45,18 @@ export default function Earnings() {
           })),
           ...apiTx,
         ]
-        setTransactions(merged.length ? merged : [
-          { id:1, label:'UTM → Larkin Terminal',  time:'Today, 5:30 PM', amount:'+$20.00', type:'earn' },
-          { id:2, label:'Taman Universiti → UTM', time:'Today, 8:00 AM', amount:'+$12.00', type:'earn' },
-        ])
+        setTransactions(merged)
       } else {
-        setStats({ totalRides:156, thisWeek:12, earnings:450, growth:15 })
-        setTransactions([
-          { id:1, label:'UTM → Larkin Terminal',  time:'Today, 5:30 PM', amount:'+$20.00', passengers:4, type:'earn' },
-          { id:2, label:'Taman Universiti → UTM', time:'Today, 8:00 AM', amount:'+$12.00', passengers:3, type:'earn' },
-          { id:3, label:'Bank Transfer',           time:'Yesterday',      amount:'$200.00', passengers:0, type:'transfer' },
-          { id:4, label:'UTM → JB Sentral',       time:'2 days ago',     amount:'+$28.00', passengers:4, type:'earn' },
-          { id:5, label:'Skudai → UTM',           time:'3 days ago',     amount:'+$15.00', passengers:3, type:'earn' },
-        ])
+        // No API data - use localStorage only
+        setStats({ totalRides: localLog.length, thisWeek: localLog.length, earnings: totalEarnings, growth: 0 })
+        const merged = localLog.map((e: any, i: number) => ({
+          id: e.id || i,
+          label: `${e.label} · ${e.passenger}`,
+          time: new Date(e.time).toLocaleString('en', { weekday:'short', hour:'2-digit', minute:'2-digit' }),
+          amount: `+$${Number(e.amount).toFixed(2)}`,
+          type: 'earn',
+        }))
+        setTransactions(merged)
       }
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
       setLoading(false)
@@ -54,9 +65,9 @@ export default function Earnings() {
 
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'SM'
   const periodStats: Record<string,{earned:string,rides:number,growth:string}> = {
-    'This Week':  { earned: `${stats?.earnings||450}`, rides: stats?.thisWeek||12,  growth: `+${stats?.growth||15}%` },
-    'This Month': { earned: `${(stats?.earnings||450)*4}`, rides: (stats?.thisWeek||12)*4, growth: `+${stats?.growth||15}%` },
-    'This Year':  { earned: `${(stats?.earnings||450)*48}`, rides: stats?.totalRides||156, growth: `+${(stats?.growth||15)+3}%` },
+    'This Week':  { earned: `${realEarnings.toFixed(2)}`, rides: stats?.thisWeek||0,  growth: `+${stats?.growth||0}%` },
+    'This Month': { earned: `${realEarnings.toFixed(2)}`, rides: stats?.thisWeek||0, growth: `+${stats?.growth||0}%` },
+    'This Year':  { earned: `${realEarnings.toFixed(2)}`, rides: stats?.totalRides||0, growth: `+${stats?.growth||0}%` },
   }
   const cur = periodStats[period]
 
@@ -75,8 +86,8 @@ export default function Earnings() {
 
         {/* Big gradient card */}
         <div className="card" style={{background:'linear-gradient(135deg,var(--blue) 0%,#1e3a8a 100%)',border:'none',marginBottom:12,color:'white'}}>
-          <div style={{fontSize:34,fontWeight:800,marginBottom:4}}>${stats?.earnings||450}</div>
-          <div style={{fontSize:13,color:'rgba(255,255,255,0.75)'}}>Total earned this month</div>
+          <div style={{fontSize:34,fontWeight:800,marginBottom:4}}>${realEarnings.toFixed(2)}</div>
+          <div style={{fontSize:13,color:'rgba(255,255,255,0.75)'}}>Total earned (confirmed bookings)</div>
           <div style={{height:4,background:'rgba(255,255,255,0.2)',borderRadius:2,marginTop:16,overflow:'hidden'}}>
             <div style={{height:'100%',width:'68%',background:'rgba(255,255,255,0.6)',borderRadius:2}}/>
           </div>
@@ -105,7 +116,11 @@ export default function Earnings() {
           <button style={{background:'none',border:'none',cursor:'pointer',fontSize:13,color:'var(--blue)',fontWeight:500,display:'flex',alignItems:'center',gap:4}}>View All <span style={{width:12,height:12,display:'flex',transform:'rotate(180deg)'}}>{I.back}</span></button>
         </div>
         {loading ? (
-          <div style={{textAlign:'center',padding:'24px',color:'var(--text3)',fontSize:13}}>Loading...</div>
+          <div style={{textAlign:'center',padding:'24px',color:'var(--text3)',fontSize:13}}>Loading transactions...</div>
+        ) : transactions.length === 0 ? (
+          <div className="card" style={{textAlign:'center',padding:'32px'}}>
+            <div style={{fontSize:13,color:'var(--text3)'}}>No earnings yet. Accept confirmed bookings to earn!</div>
+          </div>
         ) : (
           <div className="card" style={{padding:0,overflow:'hidden',marginBottom:12}}>
             {transactions.map((t,i) => (
