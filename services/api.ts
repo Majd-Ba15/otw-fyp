@@ -50,9 +50,18 @@ export const userAPI = {
   getMe:           ()                 => API.get('/api/users/me'),
   updateMe:        (d: any)           => API.put('/api/users/me', d),
   uploadPhoto:     (f: File)            => uploadFile(f),
-  uploadId:        (f: File)            => uploadFile(f),
+  uploadId:        async (f: File)      => {
+    const base64 = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload  = () => resolve((reader.result as string).split(',')[1])
+      reader.onerror = reject
+      reader.readAsDataURL(f)
+    })
+    return API.post('/api/users/upload-id', { base64, name: f.name, type: f.type })
+  },
   saveCar:         (d: any)             => API.post('/api/users/car', d),
   uploadCarPhoto:  (f: File, t: string) => uploadFile(f, `?type=${t}`),
+  submitVerification: ()               => API.post('/api/users/submit-verification', {}),
   getStats:        ()                 => API.get('/api/users/stats'),
   getProfile:      (id: number)       => API.get(`/api/users/${id}/profile`),
   getFavourites:   ()                 => API.get('/api/users/favourites'),

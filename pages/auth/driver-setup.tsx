@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import toast from 'react-hot-toast'
 import { I as Icons } from '../../components/layout/Layout'
 import Cookies from 'js-cookie'
+import { userAPI } from '../../services/api'
 
 async function uploadToLocal(file: File, query = ''): Promise<string | null> {
   try {
@@ -68,9 +69,18 @@ export default function DriverSetup() {
       localStorage.setItem('otw_car_uploads', JSON.stringify(uploads))
     }
 
-    // 3. Navigate — no axios calls here; a 401 from the backend would trigger
-    //    the interceptor's window.location redirect before router.push fires.
-    //    Backend sync happens after admin approves and driver logs in.
+    // 3. Try to save car data to backend (non-blocking)
+    userAPI.saveCar(car).catch(() => {})
+
+    // 4. Submit verification to make driver appear in admin verifications page
+    try {
+      await userAPI.submitVerification()
+      console.log('✅ Verification submitted - driver will appear in admin panel')
+    } catch (e) {
+      console.error('Verification submission failed:', e)
+    }
+
+    // 5. Navigate
     toast.success('Driver profile submitted! Awaiting admin approval.')
     setLoading(false)
     router.push('/driver/pending')

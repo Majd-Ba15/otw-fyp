@@ -20,14 +20,14 @@ export default function Verifications() {
       notifAPI.getUnreadCount(),
     ]).then(([p, v, n]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
-      if (v.status === 'fulfilled' && v.value.data?.length) {
-        setPending(v.value.data)
+      // Only show real data from API - no mock data fallback
+      if (v.status === 'fulfilled') {
+        // Handle both array and object response formats
+        const data = v.value.data
+        const pendingList = Array.isArray(data) ? data : (data?.pending || [])
+        setPending(pendingList)
       } else {
-        setPending([
-          { userId:1, fullName:'Ahmad Karim',  email:'a.karim@student.utm.edu.my', studentId:'A21EC0123', faculty:'Computing',   role:'Rider',  createdAt: new Date(Date.now()-7200000).toISOString() },
-          { userId:2, fullName:'Lee Wei Ming', email:'l.wei@student.utm.edu.my',   studentId:'A21EC0789', faculty:'Engineering', role:'Driver', createdAt: new Date(Date.now()-18000000).toISOString(), carModel:'Proton Myvi', plateNumber:'JDT 1234', colour:'White' },
-          { userId:3, fullName:'Nurul Huda',   email:'n.huda@student.utm.edu.my',  studentId:'A22EC0456', faculty:'Electrical Engineering', role:'Driver', createdAt: new Date(Date.now()-3600000).toISOString(), carModel:'Perodua Axia', plateNumber:'JHF 5678', colour:'Silver' },
-        ])
+        setPending([])
       }
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
       setLoading(false)

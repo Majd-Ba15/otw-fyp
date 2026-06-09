@@ -105,11 +105,11 @@ export default function UserManagement() {
   const handleBanUser = async () => {
     setSaving(true)
     try {
-      await adminAPI.warn(selectedUser.userId, { reason: banReason })
+      await adminAPI.ban(selectedUser.userId)
 
       // Update local state
-      setUsers(users.map(u => u.userId === selectedUser.userId ? { ...u, status: 'Banned' } : u))
-      setStats({ ...stats, banned: stats.banned + 1 })
+      setUsers(users.filter(u => u.userId !== selectedUser.userId))
+      setStats({ ...stats, totalUsers: stats.totalUsers - 1 })
 
       toast.success('User banned!')
       setBanModal(false)

@@ -32,6 +32,8 @@ export default function Register() {
     try {
       const res = await authAPI.register({ fullName: form.fullName, email: form.email, password: form.password, role: form.role })
       if (res.data.token) Cookies.set('otw_token', res.data.token, { expires: 7 })
+      // Store role in localStorage as fallback (in case token doesn't have role)
+      localStorage.setItem('otw_user_role', form.role)
       setUserId(res.data.userId)
       if (res.data.requiresOtp) setStep(2)
       else { toast.success('Account created!'); router.push('/auth/profile-setup') }
@@ -45,6 +47,8 @@ export default function Register() {
     try {
       const res = await authAPI.verifyOtp({ userId, otpCode: otp })
       if (res.data.token) Cookies.set('otw_token', res.data.token, { expires: 7 })
+      // Store role in localStorage (also needed after OTP verification)
+      localStorage.setItem('otw_user_role', form.role)
       toast.success('Email verified!')
       router.push('/auth/profile-setup')
     } catch (err: any) { toast.error(err.response?.data?.message ?? 'Invalid code') }

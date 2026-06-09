@@ -4,6 +4,7 @@ import Cookies from 'js-cookie'
 import { jwtDecode } from 'jwt-decode'
 import toast from 'react-hot-toast'
 import { I } from '../../components/layout/Layout'
+import { userAPI } from '../../services/api'
 
 async function uploadToLocal(file: File, query = ''): Promise<string | null> {
   try {
@@ -35,8 +36,21 @@ export default function UploadId() {
   const [loading, setLoading] = useState(false)
   const [done,    setDone]    = useState(false)
 
-  const getRole = () => { try { const d:any = jwtDecode(Cookies.get('otw_token') || ''); return d.role } catch { return 'Rider' } }
-  const isDriver = getRole() === 'Driver'
+  // Check driver role synchronously (like profile-setup does)
+  const isDriver = (() => {
+    try {
+      const d: any = jwtDecode(Cookies.get('otw_token') || '')
+      if (d.role === 'Driver') return true
+    } catch (e) {
+      // Token decode failed, check localStorage fallback
+    }
+    // Fallback: check localStorage (set during registration)
+    if (typeof window !== 'undefined') {
+      const storedRole = localStorage.getItem('otw_user_role')
+      return storedRole === 'Driver'
+    }
+    return false
+  })()
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
@@ -58,30 +72,68 @@ export default function UploadId() {
   }
 
   const next = () => {
-    if (isDriver) {
-      router.push('/auth/driver-setup')
-    } else {
-      toast.success('Registration complete! Please log in to access your dashboard.')
-      router.push('/auth/login')
+    // Check role from token first
+    try {
+      const token = Cookies.get('otw_token')
+      console.log('🔑 Token:', token ? 'exists' : 'missing')
+      if (token) {
+        const d: any = jwtDecode(token)
+        console.log('📋 Token role:', d.role)
+        if (d.role === 'Driver') {
+          console.log('✅ Going to driver-setup (token)')
+          router.push('/auth/driver-setup')
+          return
+        }
+      }
+    } catch (e) {
+      console.error('Token decode error:', e)
     }
+
+    // Fallback: check localStorage (set during registration)
+    const storedRole = typeof window !== 'undefined' ? localStorage.getItem('otw_user_role') : null
+    console.log('💾 Stored role:', storedRole)
+    if (storedRole === 'Driver') {
+      console.log('✅ Going to driver-setup (localStorage)')
+      router.push('/auth/driver-setup')
+      return
+    }
+
+    // Default to login (for riders or if role check fails)
+    console.log('❌ Going to login (no Driver role detected)')
+    toast.success('Registration complete! Please log in to access your dashboard.')
+    router.push('/auth/login')
   }
 
   const submit = async () => {
     if (!file) { next(); return }
     setLoading(true)
 
-    // Upload to local /public/uploads/ — never fails the flow
-    const url = await uploadToLocal(file)
-    if (url) {
-      localStorage.setItem('otw_student_id_url', url)
-    } else {
-      // Fallback: store base64 preview in localStorage if local route also fails
-      if (preview) localStorage.setItem('otw_student_id_preview', preview)
-    }
+    try {
+      // 1. Upload to local /public/uploads/
+      const url = await uploadToLocal(file)
+      if (url) {
+        localStorage.setItem('otw_student_id_url', url)
+      } else {
+        if (preview) localStorage.setItem('otw_student_id_preview', preview)
+      }
 
-    setDone(true)
-    setLoading(false)
-    setTimeout(next, 700)
+      // 2. Save to backend so admin can see it in verifications
+      try {
+        console.log('📤 Uploading student ID to backend...')
+        const uploadRes = await userAPI.uploadId(file)
+        console.log('✅ Backend upload successful:', uploadRes.data)
+      } catch (backendError) {
+        // Backend save failed, but local upload succeeded - user can still proceed
+        console.error('❌ Backend upload failed:', backendError.response?.data || backendError.message)
+      }
+
+      setDone(true)
+      setLoading(false)
+      setTimeout(next, 700)
+    } catch (error) {
+      toast.error('Failed to upload ID. Please try again.')
+      setLoading(false)
+    }
   }
 
   return (
