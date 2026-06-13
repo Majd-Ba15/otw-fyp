@@ -195,9 +195,9 @@ export default function Welcome() {
           background: linear-gradient(
             90deg,
             #02080a 0%,
-            rgba(2, 8, 10, 0.96) 4%,
-            rgba(2, 8, 10, 0.62) 16%,
-            rgba(2, 8, 10, 0.16) 30%,
+            rgba(2, 8, 10, 0.75) 4%,
+            rgba(2, 8, 10, 0.38) 16%,
+            rgba(2, 8, 10, 0.08) 30%,
             rgba(2, 8, 10, 0) 48%
           );
           pointer-events: none;
@@ -232,9 +232,9 @@ export default function Welcome() {
           z-index: 2;
           background: linear-gradient(
             180deg,
-            rgba(0, 0, 0, 0.22) 0%,
+            rgba(0, 0, 0, 0.10) 0%,
             rgba(0, 0, 0, 0) 32%,
-            rgba(0, 0, 0, 0.34) 100%
+            rgba(0, 0, 0, 0.15) 100%
           );
           pointer-events: none;
         }
@@ -298,7 +298,7 @@ export default function Welcome() {
         .hero-content {
           position: relative;
           z-index: 4;
-          width: min(42vw, 560px);
+          width: min(52vw, 680px);
           margin-left: 18px;
           padding-top: clamp(96px, 14vh, 132px);
         }
@@ -306,10 +306,11 @@ export default function Welcome() {
         h1 {
           margin: 0 0 20px;
           color: #fff;
-          font-size: clamp(54px, 5.2vw, 78px);
+          font-size: clamp(46px, 4.4vw, 66px);
           font-weight: 900;
-          line-height: 1.02;
+          line-height: 1.04;
           letter-spacing: 0;
+          white-space: nowrap;
           text-rendering: optimizeLegibility;
           -webkit-font-smoothing: antialiased;
         }
