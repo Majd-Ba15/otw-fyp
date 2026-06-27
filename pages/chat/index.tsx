@@ -26,17 +26,6 @@ interface Contact {
   subtitle: string
 }
 
-// Mock contacts per role
-const MOCK_RIDER_CONTACTS: Contact[] = [
-  { userId:10, name:'Sarah Tan',   initials:'ST', role:'Driver', rideId:1, route:'UTM Main Gate → KL Sentral',   subtitle:'Driver · Upcoming ride' },
-  { userId:11, name:'Ahmad Rizal', initials:'AR', role:'Driver', rideId:2, route:'Faculty → Paradigm Mall',      subtitle:'Driver · Tomorrow 9am' },
-]
-const MOCK_DRIVER_CONTACTS: Contact[] = [
-  { userId:20, name:'Ahmad Karim', initials:'AK', role:'Rider', rideId:1, route:'UTM Main Gate → KL Sentral', subtitle:'Passenger · Seat 1' },
-  { userId:21, name:'Fatimah Ali', initials:'FA', role:'Rider', rideId:1, route:'UTM Main Gate → KL Sentral', subtitle:'Passenger · Seat 2' },
-  { userId:22, name:'Lee Wei Ming',initials:'LW', role:'Rider', rideId:2, route:'Faculty → Mid Valley',       subtitle:'Passenger · Seat 1' },
-]
-
 export default function ChatIndex() {
   const router = useRouter()
   const [profile,       setProfile]       = useState<any>(null)
@@ -62,26 +51,31 @@ export default function ChatIndex() {
 
     Promise.allSettled([
       userAPI.getMe(),
-      messageAPI.getConversations(),
       notifAPI.getUnreadCount(),
-      messageAPI.getContacts(),
       detectedRole === 'Driver' ? rideAPI.getMine('upcoming') : bookingAPI.getUpcoming(),
-    ]).then(([p, c, n, ct, rb]) => {
+    ]).then(async ([p, n, rb]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
 
-      // Build contacts list from API or fall back to mocks
+      // Build contacts list from real API data only.
       let builtContacts: Contact[] = []
-      if (ct.status === 'fulfilled' && ct.value.data?.length) {
-        builtContacts = ct.value.data
-      } else if (rb.status === 'fulfilled' && rb.value.data?.length) {
+      if (rb.status === 'fulfilled' && rb.value.data?.length) {
         const rbData = rb.value.data
         if (detectedRole === 'Driver') {
-          // Each ride's passengers become contacts
-          rbData.forEach((ride: any) => {
-            (ride.passengers || []).forEach((p: any) => {
+          const ridesWithPassengers = await Promise.all(rbData.map(async (ride: any) => {
+            try {
+              const res = await rideAPI.getPassengers(ride.rideId || ride.id)
+              return { ...ride, passengers: res.data || [], bookedPassengers: res.data?.length || 0 }
+            } catch {
+              return { ...ride, passengers: [], bookedPassengers: 0 }
+            }
+          }))
+          ridesWithPassengers.forEach((ride: any) => {
+            ride.passengers.forEach((p: any) => {
+              const userId = p.rider?.userId || p.rider?.id || p.riderId || p.userId
+              if (!userId) return
               builtContacts.push({
-                userId:   p.rider?.userId || p.userId,
+                userId,
                 name:     p.rider?.fullName || p.fullName || 'Passenger',
                 initials: (p.rider?.fullName || p.fullName || 'PA').slice(0,2).toUpperCase(),
                 role:     'Rider',
@@ -91,11 +85,13 @@ export default function ChatIndex() {
               })
             })
           })
-          setDriverRides(rbData)
+          setDriverRides(ridesWithPassengers.filter((ride: any) => ride.bookedPassengers > 0))
         } else {
           rbData.forEach((bk: any) => {
+            const userId = bk.driver?.userId || bk.driver?.id || bk.driverId
+            if (!userId) return
             builtContacts.push({
-              userId:   bk.driver?.userId || bk.driverId || 0,
+              userId,
               name:     bk.driver?.fullName || bk.driverName || 'Your driver',
               initials: (bk.driver?.fullName || bk.driverName || 'DR').slice(0,2).toUpperCase(),
               role:     'Driver',
@@ -106,22 +102,9 @@ export default function ChatIndex() {
           })
         }
       }
-      setContacts(builtContacts.length ? builtContacts : detectedRole === 'Driver' ? MOCK_DRIVER_CONTACTS : MOCK_RIDER_CONTACTS)
+      setContacts(builtContacts.filter(c => c.userId && c.rideId))
 
-      // Build conversations
-      if (c.status === 'fulfilled' && c.value.data?.length) {
-        setConversations(c.value.data)
-      } else {
-        // Derive conversations from contacts/rides
-        const mock: Conversation[] = detectedRole === 'Driver' ? [
-          { rideId:1, otherUserId:20, otherUserName:'Ahmad Karim', otherUserInitials:'AK', lastMessage:"I'll be at Gate A", lastMessageAt: new Date(Date.now()-4*60000).toISOString(), unreadCount:2, route:'UTM Main Gate → KL Sentral' },
-          { rideId:2, otherUserId:21, otherUserName:'Fatimah Ali', otherUserInitials:'FA', lastMessage:'Ok, confirmed!',    lastMessageAt: new Date(Date.now()-86400000).toISOString(), unreadCount:0, route:'Faculty → Mid Valley' },
-        ] : [
-          { rideId:1, otherUserId:10, otherUserName:'Sarah Tan',   otherUserInitials:'ST', lastMessage:"I'm 5 minutes away!", lastMessageAt: new Date(Date.now()-4*60000).toISOString(), unreadCount:1, route:'UTM Main Gate → KL Sentral' },
-          { rideId:2, otherUserId:11, otherUserName:'Ahmad Rizal', otherUserInitials:'AR', lastMessage:'Confirmed, see you at 5:30', lastMessageAt: new Date(Date.now()-86400000).toISOString(), unreadCount:0, route:'Faculty → Paradigm Mall' },
-        ]
-        setConversations(mock)
-      }
+      setConversations([])
       setLoading(false)
     })
   }, [])
@@ -140,6 +123,10 @@ export default function ChatIndex() {
 
   const openChat = (contact: Contact) => {
     router.push(`/chat/${contact.rideId}?userId=${contact.userId}&name=${encodeURIComponent(contact.name)}`)
+  }
+
+  const openConversation = (conv: Conversation) => {
+    router.push(`/chat/${conv.rideId}?userId=${conv.otherUserId}&name=${encodeURIComponent(conv.otherUserName)}`)
   }
 
   const fmtTime = (iso: string) => {
@@ -256,10 +243,11 @@ export default function ChatIndex() {
               <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>Or broadcast to all passengers</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 10 }}>
-                  {(driverRides.length ? driverRides : [
-                    { rideId:1, fromLocation:'UTM Main Gate', toLocation:'KL Sentral', departureTime: new Date(Date.now()+3600000).toISOString(), bookedPassengers:3 },
-                    { rideId:2, fromLocation:'Faculty of Computing', toLocation:'Mid Valley', departureTime: new Date(Date.now()+7200000).toISOString(), bookedPassengers:2 },
-                  ]).map((ride: any) => (
+                  {driverRides.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '14px 0', fontSize: 13, color: 'var(--text3)' }}>
+                      No rides with passengers found
+                    </div>
+                  ) : driverRides.map((ride: any) => (
                     <div key={ride.rideId || ride.id}
                       onClick={() => setBroadcastRide(broadcastRide?.rideId === (ride.rideId || ride.id) ? null : ride)}
                       style={{
@@ -324,7 +312,7 @@ export default function ChatIndex() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                 {filteredConvs.map(conv => (
                   <div key={conv.rideId}
-                    onClick={() => router.push(`/chat/${conv.rideId}`)}
+                    onClick={() => openConversation(conv)}
                     className="card"
                     style={{
                       cursor: 'pointer', padding: '14px 16px', marginBottom: 0,

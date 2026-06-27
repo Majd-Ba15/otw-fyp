@@ -18,6 +18,8 @@ export default function Chat() {
   const [loading,    setLoading]    = useState(false)
   const [unread,     setUnread]     = useState(0)
   const [myUserId,   setMyUserId]   = useState<number>(0)
+  const [passengers, setPassengers] = useState<any[]>([])
+  const [selectedPassenger, setSelectedPassenger] = useState<any>(null)
   const [showBroadcast, setShowBroadcast] = useState(false)
   const [broadcasting,  setBroadcasting] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -39,8 +41,9 @@ export default function Chat() {
       userAPI.getMe(),
       messageAPI.getMessages(rideId),
       rideAPI.getById(rideId),
+      rideAPI.getPassengers(rideId),
       notifAPI.getUnreadCount(),
-    ]).then(([p, m, r, n]) => {
+    ]).then(([p, m, r, pas, n]) => {
       if (p.status === 'fulfilled') {
         setProfile(p.value.data)
         setMyUserId(p.value.data?.userId || p.value.data?.id || 0)
@@ -48,31 +51,49 @@ export default function Chat() {
       if (m.status === 'fulfilled') {
         setMessages(m.value.data || [])
       } else {
-        setMessages([
-          { messageId:1, senderId:99, senderName:'Sarah Tan', content:"I'm 5 minutes away. Please be ready at Gate A.", createdAt: new Date(Date.now()-5*60000).toISOString() },
-          { messageId:2, senderId:0,  senderName:'Me',         content:"Ok, I'm at Gate A now. Blue backpack.",           createdAt: new Date(Date.now()-4*60000).toISOString() },
-          { messageId:3, senderId:99, senderName:'Sarah Tan', content:"Great! I'm in the white Proton X50.",             createdAt: new Date(Date.now()-3*60000).toISOString() },
-        ])
+        setMessages([])
       }
       if (r.status === 'fulfilled') setRide(r.value.data)
-      else setRide({ fromLocation:'UTM Main Gate', toLocation:'KL Sentral', driverName:'Sarah Tan', driverInitials:'ST' })
+      if (pas.status === 'fulfilled') {
+        const list = pas.value.data || []
+        setPassengers(list)
+        const queryId = typeof queryUserId === 'string' ? Number(queryUserId) : 0
+        const picked = list.find((x: any) => (x.rider?.userId || x.riderId || x.userId) === queryId) || list[0] || null
+        setSelectedPassenger(picked)
+      }
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
     })
-  }, [rideId])
+  }, [rideId, queryUserId])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  const getReceiverId = () => {
+    if (role === 'Rider') return ride?.driver?.userId || ride?.driver?.id || ride?.driverId || 0
+    const selectedId = selectedPassenger?.rider?.userId || selectedPassenger?.riderId || selectedPassenger?.userId || 0
+    if (selectedId) return selectedId
+    const fromQuery = typeof queryUserId === 'string' ? Number(queryUserId) : 0
+    if (fromQuery) return fromQuery
+    return 0
+  }
 
   const send = async () => {
     if (!msg.trim() || loading) return
     const text = msg.trim()
+    const receiverId = getReceiverId()
+    if (!receiverId) {
+      alert('Choose a real contact before sending a private message.')
+      return
+    }
     setMsg('')
     setLoading(true)
-    const optimistic = { messageId: Date.now(), senderId: myUserId || 0, isMe: true, content: text, createdAt: new Date().toISOString() }
-    setMessages(p => [...p, optimistic])
-    const recipientId = typeof queryUserId === 'string' ? Number(queryUserId) : undefined
     try {
-      await messageAPI.send({ rideId, content: text, ...(recipientId ? { recipientId } : {}) })
-    } catch {}
+      await messageAPI.send({ rideId, content: text, receiverId })
+      const sent = { messageId: Date.now(), senderId: myUserId || 0, isMe: true, content: text, createdAt: new Date().toISOString() }
+      setMessages(p => [...p, sent])
+    } catch (e: any) {
+      setMsg(text)
+      alert(e.response?.data?.message || 'Message could not be sent. Please make sure this contact belongs to the ride.')
+    }
     finally { setLoading(false) }
   }
 
@@ -90,13 +111,31 @@ export default function Chat() {
   }
 
   const isMe = (m: any) => m.isMe || m.senderId === myUserId || m.senderId === 0
+  const normalizeMessage = (m: any) => ({
+    ...m,
+    senderId: m.senderId ?? m.sender?.userId,
+    receiverId: m.receiverId,
+    senderName: m.senderName || m.sender?.fullName,
+    createdAt: m.createdAt || m.sentAt,
+  })
 
-  const otherName     = ride?.driverName || ride?.otherUserName || (typeof queryName === 'string' ? queryName : '') || (role === 'Rider' ? 'Your driver' : 'Passenger')
+  const normalizedMessages = messages.map(normalizeMessage)
+  const visibleMessages = normalizedMessages.filter((m: any) => {
+    if (m.isBroadcast) return true
+    if (role !== 'Driver') return true
+    const selectedId = selectedPassenger?.rider?.userId || selectedPassenger?.riderId || selectedPassenger?.userId || 0
+    if (!selectedId) return false
+    return m.senderId === selectedId || m.receiverId === selectedId
+  })
+
+  const selectedPassengerName = selectedPassenger?.rider?.fullName || selectedPassenger?.fullName
+  const otherName     = selectedPassengerName || ride?.driverName || ride?.otherUserName || (typeof queryName === 'string' ? queryName : '') || (role === 'Rider' ? 'Your driver' : 'Passenger')
   const otherInitials = ride?.driverInitials || (otherName.split(' ').map((n:string) => n[0]).join('').slice(0,2).toUpperCase())
   const route         = ride ? `${ride.fromLocation} → ${ride.toLocation}` : ''
   const accentColor   = role === 'Driver' ? 'var(--blue)' : 'var(--green)'
   const myBubble      = role === 'Driver' ? 'bubble bubble-driver-me' : 'bubble bubble-me'
   const initials      = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'ME'
+  const receiverId    = getReceiverId()
 
   return (
     <Layout role={role} showBack userInitials={initials} unreadCount={unread}>
@@ -127,6 +166,26 @@ export default function Chat() {
           )}
         </div>
 
+        {role === 'Driver' && passengers.length > 0 && (
+          <div style={{ padding: '10px 20px', background: 'var(--bg-card)', borderBottom: '1px solid var(--border)', display: 'flex', gap: 8, overflowX: 'auto' }}>
+            {passengers.map((p: any) => {
+              const riderId = p.rider?.userId || p.riderId || p.userId
+              const name = p.rider?.fullName || p.fullName || 'Passenger'
+              const active = riderId === receiverId
+              return (
+                <button key={riderId || p.bookingId}
+                  onClick={() => {
+                    setSelectedPassenger(p)
+                    router.replace(`/chat/${rideId}?userId=${riderId}&name=${encodeURIComponent(name)}`, undefined, { shallow: true })
+                  }}
+                  style={{ border: `1px solid ${active ? 'var(--blue)' : 'var(--border)'}`, background: active ? 'var(--blue-l)' : 'var(--bg2)', color: active ? 'var(--blue-d)' : 'var(--text2)', borderRadius: 20, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                  {name}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         {/* Broadcast banner */}
         {showBroadcast && role === 'Driver' && (
           <div style={{ padding: '10px 20px', background: 'var(--blue-l)', borderBottom: `2px solid var(--blue)`, display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -142,7 +201,7 @@ export default function Chat() {
 
         {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 700, margin: '0 auto', width: '100%' }}>
-          {messages.map(m => (
+          {visibleMessages.map(m => (
             <div key={m.messageId} style={{ display: 'flex', justifyContent: isMe(m) ? 'flex-end' : 'flex-start', flexDirection: 'column', alignItems: isMe(m) ? 'flex-end' : 'flex-start' }}>
               {!isMe(m) && <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2, paddingLeft: 4 }}>{m.senderName}</div>}
               <div className={isMe(m) ? myBubble : 'bubble bubble-them'}
@@ -153,7 +212,7 @@ export default function Chat() {
                 )}
               </div>
               <div style={{ fontSize: 10, color: 'var(--text4)', marginTop: 3 }}>
-                {new Date(m.createdAt).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}
+                {new Date(m.createdAt || Date.now()).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}
               </div>
             </div>
           ))}
@@ -165,15 +224,15 @@ export default function Chat() {
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', background: 'var(--bg2)', borderRadius: 24, padding: '6px 6px 6px 16px' }}>
             <input
               style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', fontSize: 14, color: 'var(--text)', fontFamily: 'inherit' }}
-              placeholder={showBroadcast ? 'Broadcast to all passengers…' : 'Type a message…'}
+              placeholder={showBroadcast ? 'Broadcast to all passengers...' : receiverId ? 'Type a message...' : 'Choose a real contact to send...'}
               value={msg}
               onChange={e => setMsg(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && (showBroadcast ? sendBroadcast() : send())}
             />
             <button
               onClick={showBroadcast ? sendBroadcast : send}
-              disabled={!msg.trim() || loading || broadcasting}
-              style={{ width: 36, height: 36, borderRadius: '50%', background: accentColor, border: 'none', cursor: 'pointer', opacity: !msg.trim() ? .5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+              disabled={!msg.trim() || loading || broadcasting || (!showBroadcast && !receiverId)}
+              style={{ width: 36, height: 36, borderRadius: '50%', background: accentColor, border: 'none', cursor: 'pointer', opacity: (!msg.trim() || (!showBroadcast && !receiverId)) ? .5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
             >
               <span style={{ width: 16, height: 16, color: 'white', display: 'flex' }}>{I.send}</span>
             </button>

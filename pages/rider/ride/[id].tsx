@@ -89,6 +89,13 @@ export default function RideDetail() {
     router.push(`/rider/booking/confirm?rideId=${id}`)
   }
 
+  const messageDriver = () => {
+    const driverId = ride?.driver?.userId || ride?.driverId
+    const driverName = ride?.driver?.fullName
+    const query = driverId ? `?userId=${driverId}${driverName ? `&name=${encodeURIComponent(driverName)}` : ''}` : ''
+    router.push(`/chat/${id}${query}`)
+  }
+
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'AK'
   const isFull   = ride?.availableSeats === 0
 
@@ -150,7 +157,7 @@ export default function RideDetail() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <button className="btn btn-secondary btn-full"
               style={{ fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
-              onClick={() => router.push(`/chat/${id}`)}>
+              onClick={messageDriver}>
               <span style={{ width: 15, height: 15, display: 'flex' }}>{I.msg}</span> Message
             </button>
             <button className="btn btn-secondary btn-full"

@@ -96,9 +96,26 @@ export const bookingAPI = {
 }
 export const messageAPI = {
   getMessages:      (rideId: number)  => API.get(`/api/messages/${rideId}`),
-  send:             (d: any)          => API.post('/api/messages', d),
+  send:             (d: any)          => {
+    const receiverId = d.receiverId ?? d.recipientId
+    if (!receiverId) return Promise.reject(new Error('receiverId is required'))
+    return API.post('/api/messages', {
+      rideId: d.rideId,
+      content: d.content,
+      receiverId,
+      isBroadcast: false,
+    })
+  },
   getConversations: ()                => API.get('/api/messages/conversations'),
-  broadcast:        (d: any)          => API.post('/api/messages/broadcast', d),
+  broadcast:        async (d: any)    => {
+    const payload = { rideId: d.rideId, content: d.content, receiverId: null, isBroadcast: true }
+    try {
+      return await API.post('/api/messages/broadcast', d)
+    } catch (err: any) {
+      if (![404, 405].includes(err.response?.status)) throw err
+      return API.post('/api/messages', payload)
+    }
+  },
   getContacts:      ()                => API.get('/api/messages/contacts'),
 }
 export const ratingAPI = {

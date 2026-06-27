@@ -191,6 +191,16 @@ export default function Layout({ children, role, title, showBack, onBack, unread
     return router.pathname === p || router.pathname.startsWith(p + '/')
   }
 
+  const navHref = (p: string) => {
+    if (!p.includes('[id]')) return p
+    const currentId = typeof router.query.id === 'string' ? Number(router.query.id) : 0
+    if (currentId > 0) return p.replace('[id]', String(currentId))
+    if (p.startsWith('/driver/')) return '/driver/rides'
+    if (p.startsWith('/rider/')) return '/rider/dashboard'
+    if (p.startsWith('/admin/')) return '/admin/dashboard'
+    return '/chat'
+  }
+
   const initials = userInitials || (() => {
     try {
       const d: any = jwtDecode(Cookies.get('otw_token') ?? '')
@@ -247,7 +257,7 @@ export default function Layout({ children, role, title, showBack, onBack, unread
               return (
                 <Link
                   key={item.path}
-                  href={item.path.replace('[id]', '0')}
+                  href={navHref(item.path)}
                   className={`sidebar-link ${isActive(item.path) ? activeClass : ''}`}
                   onClick={() => setSideOpen(false)}
                 >

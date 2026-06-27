@@ -42,6 +42,19 @@ export default function ManageRide() {
   }
 
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'SM'
+  const passengerChatHref = (p: any) => {
+    const userId = p.rider?.userId || p.riderId || p.userId
+    const name = p.rider?.fullName || p.fullName
+    return `/chat/${id}${userId ? `?userId=${userId}${name ? `&name=${encodeURIComponent(name)}` : ''}` : ''}`
+  }
+  const callPassenger = (p: any) => {
+    const phone = p.rider?.phone || p.phone
+    if (!phone) {
+      toast.error('No phone number available for this passenger')
+      return
+    }
+    window.location.href = `tel:${phone}`
+  }
 
   return (
     <Layout role="Driver" showBack userInitials={initials} unreadCount={unread}>
@@ -116,7 +129,8 @@ export default function ManageRide() {
                 <div style={{ display:'flex',alignItems:'center',gap:10 }}>
                   <div className="av">{p.rider?.fullName?.slice(0,2).toUpperCase()}</div>
                   <div style={{ flex:1 }}><div style={{ fontSize:13,fontWeight:500,color:'var(--text)' }}>{p.rider?.fullName}</div></div>
-                  <button className="btn-icon btn-secondary" onClick={() => router.push(`/chat/${id}`)}><span style={{ width:15,height:15,display:'flex' }}>{I.msg}</span></button>
+                  <button className="btn-icon btn-secondary" onClick={() => router.push(passengerChatHref(p))}><span style={{ width:15,height:15,display:'flex' }}>{I.msg}</span></button>
+                  <button className="btn-icon btn-secondary" onClick={() => callPassenger(p)} disabled={!(p.rider?.phone || p.phone)}><span style={{ width:15,height:15,display:'flex' }}>{I.phone}</span></button>
                 </div>
               </div>
             ))}
