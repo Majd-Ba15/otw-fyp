@@ -4,6 +4,8 @@ import Layout, { I } from '../../../components/layout/Layout'
 import { adminAPI, userAPI, notifAPI } from '../../../services/api'
 import toast from 'react-hot-toast'
 
+const LOCAL_REPORTS_KEY = 'otw_local_reports'
+
 export default function ReportDetail() {
   const router = useRouter()
   const { id } = router.query
@@ -13,6 +15,8 @@ export default function ReportDetail() {
   const [loading, setLoading] = useState(true)
   const [unread,  setUnread]  = useState(0)
   const [error,   setError]   = useState(false)
+  const [ai,      setAi]      = useState<any>(null)
+  const [aiLoading, setAiLoading] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -24,7 +28,7 @@ export default function ReportDetail() {
       if (p.status === 'fulfilled') setProfile(p.value.data)
       if (r.status === 'fulfilled') {
         const raw = r.value.data
-        setReport({
+        const parsedReport = {
           reportId:  raw.reportId || raw.id || id,
           title:     raw.title || raw.description || 'Report',
           status:    raw.status || 'open',
@@ -35,9 +39,32 @@ export default function ReportDetail() {
           statement: raw.statement || raw.description || raw.body || '',
           reporter:  raw.reporter  || { fullName: raw.reporterName, totalRides: raw.reporterRides, averageRating: raw.reporterRating, reportCount: raw.reporterReportCount || 0 },
           reported:  raw.reported  || { fullName: raw.reportedName, totalRides: raw.reportedRides, averageRating: raw.reportedRating, reportCount: raw.reportedReportCount || 0 },
-        })
+        }
+        setReport(parsedReport)
+        loadAiSummary(parsedReport)
       } else {
-        setError(true)
+        let localReport = null
+        try {
+          const localReports = JSON.parse(localStorage.getItem(LOCAL_REPORTS_KEY) || '[]')
+          localReport = localReports.find((item: any) => String(item.reportId || item.id) === String(id))
+        } catch {}
+        if (localReport) {
+          setReport({
+            reportId:  localReport.reportId || localReport.id || id,
+            title:     localReport.title || localReport.description || 'Report',
+            status:    localReport.status || 'open',
+            filedBy:   localReport.filedBy || localReport.reporterName || 'Unknown',
+            against:   localReport.against || localReport.reportedName || 'Unknown',
+            ride:      localReport.ride || null,
+            filedAt:   localReport.filedAt || localReport.createdAt,
+            statement: localReport.statement || localReport.description || '',
+            reporter:  { fullName: localReport.filedBy || localReport.reporterName || 'Unknown', totalRides: '—', averageRating: '—', reportCount: 0 },
+            reported:  { fullName: localReport.against || localReport.reportedName || 'Unknown', totalRides: '—', averageRating: '—', reportCount: 1 },
+          })
+          loadAiSummary(localReport)
+        } else {
+          setError(true)
+        }
       }
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
       setLoading(false)
@@ -53,6 +80,27 @@ export default function ReportDetail() {
   }
 
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'AD'
+
+  const loadAiSummary = async (reportData: any) => {
+    setAiLoading(true)
+    try {
+      const res = await fetch('/api/ai/report-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: reportData.title,
+          statement: reportData.statement || reportData.description,
+          filedBy: reportData.filedBy || reportData.reporterName,
+          against: reportData.against || reportData.reportedName,
+        }),
+      })
+      setAi(await res.json())
+    } catch {
+      setAi(null)
+    } finally {
+      setAiLoading(false)
+    }
+  }
 
   const fmtDate = (v: string) => {
     if (!v) return ''
@@ -98,6 +146,25 @@ export default function ReportDetail() {
                 <p style={{ fontSize:13, color:'var(--text2)', lineHeight:1.7 }}>{report.statement}</p>
               </div>
             )}
+
+            <div className="card" style={{ marginBottom:12, border:'1px solid var(--blue)' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
+                <span style={{ width:16, height:16, color:'var(--blue)', display:'flex' }}>{I.robot}</span>
+                <div style={{ fontSize:14, fontWeight:700, color:'var(--text)' }}>AI report summary</div>
+                {aiLoading && <span style={{ fontSize:12, color:'var(--text3)', marginLeft:'auto' }}>Thinking...</span>}
+              </div>
+              {ai ? (
+                <>
+                  <div style={{ fontSize:13, color:'var(--text2)', lineHeight:1.6, marginBottom:8 }}>{ai.summary}</div>
+                  <div style={{ display:'flex', gap:8, flexWrap:'wrap', alignItems:'center' }}>
+                    <span className={`badge ${ai.priority === 'High' ? 'badge-red' : ai.priority === 'Medium' ? 'badge-amber' : 'badge-green'}`}>{ai.priority} priority</span>
+                    <span style={{ fontSize:12, color:'var(--text3)' }}>{ai.suggestedAction}</span>
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize:13, color:'var(--text3)' }}>AI summary will appear here.</div>
+              )}
+            </div>
 
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:12 }}>
               {[{label:'Reporter',data:report.reporter},{label:'Reported',data:report.reported}].map(({label,data}) => (

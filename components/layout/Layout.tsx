@@ -97,6 +97,7 @@ const RIDER_NAV = [
   { path:'/rider/profile',      icon:'user',    label:'Profile' },
   { path:'/rider/favourites',   icon:'heart',   label:'Favourites' },
   { path:'/rider/waitlist',     icon:'clock',   label:'Waitlist' },
+  { path:'/rider/report',       icon:'alert',   label:'Report issue' },
   { path:'/rider/chat-ai',      icon:'robot',   label:'AI assistant' },
 ]
 const DRIVER_NAV = [

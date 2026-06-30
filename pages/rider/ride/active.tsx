@@ -170,11 +170,18 @@ export default function RiderActiveRide() {
 
         {/* SOS — always visible */}
         {status !== 'completed' && (
-          <button className="btn btn-full"
-            onClick={() => router.push('/sos')}
-            style={{ height: 46, background: 'transparent', border: '1.5px solid var(--red)', color: 'var(--red)', borderRadius: 8, fontSize: 14, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <span style={{ width: 18, height: 18, display: 'flex' }}>{I.sos}</span> Emergency SOS
-          </button>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
+            <button className="btn btn-full"
+              onClick={() => router.push('/sos')}
+              style={{ height: 46, background: 'transparent', border: '1.5px solid var(--red)', color: 'var(--red)', borderRadius: 8, fontSize: 14, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <span style={{ width: 18, height: 18, display: 'flex' }}>{I.sos}</span> Emergency SOS
+            </button>
+            <button className="btn btn-secondary btn-full"
+              onClick={() => router.push('/rider/report')}
+              style={{ height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+              <span style={{ width: 18, height: 18, display: 'flex' }}>{I.alert}</span> Report issue
+            </button>
+          </div>
         )}
       </div>
     </Layout>

@@ -3,6 +3,8 @@ import { useRouter } from 'next/router'
 import Layout, { I } from '../../components/layout/Layout'
 import { adminAPI, userAPI, notifAPI } from '../../services/api'
 
+const LOCAL_REPORTS_KEY = 'otw_local_reports'
+
 export default function Reports() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
@@ -19,7 +21,11 @@ export default function Reports() {
       notifAPI.getUnreadCount(),
     ]).then(([p, r, n]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
-      setReports(r.status === 'fulfilled' ? (r.value.data || []) : [])
+      let localReports: any[] = []
+      try { localReports = JSON.parse(localStorage.getItem(LOCAL_REPORTS_KEY) || '[]') } catch {}
+      const backendReports = r.status === 'fulfilled' ? (r.value.data || []) : []
+      const backendIds = new Set(backendReports.map((item: any) => String(item.reportId || item.id)))
+      setReports([...localReports.filter(item => !backendIds.has(String(item.reportId || item.id))), ...backendReports])
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
       setLoading(false)
     })
@@ -29,7 +35,8 @@ export default function Reports() {
   const statusBadge = (s:string) => s==='open'?'badge-red':s==='investigating'?'badge-amber':'badge-green'
 
   const filtered = reports.filter(r => {
-    if (filter !== 'all' && r.status !== filter) return false
+    const status = (r.status || 'open').toLowerCase()
+    if (filter !== 'all' && status !== filter) return false
     const q = search.toLowerCase()
     if (q && !(r.title||r.description||'').toLowerCase().includes(q) && !(r.filedBy||r.reporterName||r.reporter?.fullName||'').toLowerCase().includes(q)) return false
     return true
@@ -37,9 +44,9 @@ export default function Reports() {
 
   const counts = {
     all:           reports.length,
-    open:          reports.filter(r => r.status === 'open').length,
-    investigating: reports.filter(r => r.status === 'investigating').length,
-    resolved:      reports.filter(r => r.status === 'resolved').length,
+    open:          reports.filter(r => (r.status || 'open').toLowerCase() === 'open').length,
+    investigating: reports.filter(r => (r.status || '').toLowerCase() === 'investigating').length,
+    resolved:      reports.filter(r => (r.status || '').toLowerCase() === 'resolved').length,
   }
 
   return (
@@ -98,7 +105,7 @@ export default function Reports() {
                   </div>
                 </div>
                 <div style={{display:'flex',alignItems:'center',gap:8,flexShrink:0}}>
-                  <span className={`badge ${statusBadge(r.status)}`}>{r.status}</span>
+                  <span className={`badge ${statusBadge((r.status || 'open').toLowerCase())}`}>{r.status || 'open'}</span>
                   <span style={{width:14,height:14,color:'var(--text3)',display:'flex'}}>{I.back}</span>
                 </div>
               </div>

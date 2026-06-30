@@ -34,6 +34,7 @@ export default function SearchRides() {
         const rides = r.data || []
         setAllRides(rides)
         setDisplayed(rides)
+        if (rides.length > 1) runAiMatch(rides)
       })
       .catch(() => {
         // Demo rides with Lebanese coordinates so map looks populated
@@ -46,6 +47,7 @@ export default function SearchRides() {
         ]
         setAllRides(demo)
         setDisplayed(demo)
+        if (demo.length > 1) runAiMatch(demo)
       })
       .finally(() => setLoadingAll(false))
   }, [])

@@ -5,9 +5,11 @@ import { rideAPI, userAPI } from '../../../services/api'
 import toast from 'react-hot-toast'
 
 const FAV_KEY       = 'otw_favourite_rides'
+const FAV_RIDES_KEY = 'otw_favourite_ride_details'
 const WAITLIST_KEY  = 'otw_waitlist'
 
 function getFavs(): number[]   { try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]') } catch { return [] } }
+function getFavRideDetails(): any[] { try { return JSON.parse(localStorage.getItem(FAV_RIDES_KEY) || '[]') } catch { return [] } }
 function getWL(): any[]         { try { return JSON.parse(localStorage.getItem(WAITLIST_KEY) || '[]') } catch { return [] } }
 
 export default function RideDetail() {
@@ -52,11 +54,24 @@ export default function RideDetail() {
     if (isFav) {
       const next = favs.filter(f => f !== rideId)
       localStorage.setItem(FAV_KEY, JSON.stringify(next))
+      localStorage.setItem(FAV_RIDES_KEY, JSON.stringify(getFavRideDetails().filter((r: any) => Number(r.rideId || r.id) !== rideId)))
       setIsFav(false)
       toast('Removed from favourites')
     } else {
       const next = [...favs, rideId]
       localStorage.setItem(FAV_KEY, JSON.stringify(next))
+      const details = getFavRideDetails()
+      const summary = {
+        rideId,
+        fromLocation: ride?.fromLocation,
+        toLocation: ride?.toLocation,
+        departureTime: ride?.departureTime,
+        pricePerSeat: ride?.pricePerSeat,
+        availableSeats: ride?.availableSeats,
+        totalSeats: ride?.totalSeats,
+        driver: ride?.driver,
+      }
+      localStorage.setItem(FAV_RIDES_KEY, JSON.stringify([summary, ...details.filter((r: any) => Number(r.rideId || r.id) !== rideId)]))
       setIsFav(true)
       toast.success('Added to favourites!')
     }

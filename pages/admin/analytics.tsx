@@ -5,6 +5,8 @@ import { adminAPI, userAPI, notifAPI } from '../../services/api'
 export default function Analytics() {
   const [profile, setProfile] = useState<any>(null)
   const [data,    setData]    = useState<any>(null)
+  const [ai,      setAi]      = useState<any>(null)
+  const [aiLoading, setAiLoading] = useState(false)
   const [loading, setLoading] = useState(true)
   const [unread,  setUnread]  = useState(0)
 
@@ -22,7 +24,7 @@ export default function Analytics() {
           day: new Date(d.date).toLocaleDateString('en', { weekday: 'short' }),
           val: d.count || 0,
         }))
-        setData({
+        const viewData = {
           kpis: [
             { val: (raw.totalUsers || 0).toLocaleString(),          label: 'Total users',   badge: `+${raw.newUsersThisWeek || 0}` },
             { val: (raw.newUsersThisWeek || 0).toString(),          label: 'New this week', badge: 'New' },
@@ -32,13 +34,19 @@ export default function Analytics() {
           bars: bars.length ? bars : [{day:'Mon',val:0},{day:'Tue',val:0},{day:'Wed',val:0},{day:'Thu',val:0},{day:'Fri',val:0},{day:'Sat',val:0},{day:'Sun',val:0}],
           topRoutes: (raw.topRoutes || []).map((r: any) => ({ route:`${r.fromLocation} → ${r.toLocation}`, count:r.count })),
           growth: { thisMonth:`+${raw.newUsersThisWeek||0}`, lastMonth:'N/A', retention:`${(raw.successRate||0).toFixed(1)}%` },
-        })
-      } else setData({
+        }
+        setData(viewData)
+        loadAiSummary(viewData)
+      } else {
+        const demoData = {
         kpis:[ {val:'2,481',label:'Total users',badge:'+12%'},{val:'342',label:'Active drivers',badge:'+8%'},{val:'8,920',label:'Rides completed',badge:'+24%'},{val:'44,320',label:'Revenue ($)',badge:'+18%'} ],
         bars:[ {day:'Mon',val:320},{day:'Tue',val:280},{day:'Wed',val:420},{day:'Thu',val:180},{day:'Fri',val:380},{day:'Sat',val:120},{day:'Sun',val:90} ],
         topRoutes:[ {route:'UTM → City Centre',count:1240},{route:'Faculty → Mall',count:890},{route:'UTM → JB Sentral',count:654} ],
         growth:{ thisMonth:'+342', lastMonth:'+298', retention:'82%' }
-      })
+        }
+        setData(demoData)
+        loadAiSummary(demoData)
+      }
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
       setLoading(false)
     })
@@ -49,6 +57,22 @@ export default function Analytics() {
   const kpiColors = [{bg:'#EFF6FF',color:'#3B82F6'},{bg:'#ECFDF5',color:'#10B981'},{bg:'#FEF3E2',color:'#F59E0B'},{bg:'#F5F3FF',color:'#8B5CF6'}]
   const maxBar    = data ? Math.max(...(data.bars||[]).map((b:any)=>b.val), 1) : 1
 
+  const loadAiSummary = async (analyticsData: any) => {
+    setAiLoading(true)
+    try {
+      const res = await fetch('/api/ai/analytics-summary', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: analyticsData }),
+      })
+      setAi(await res.json())
+    } catch {
+      setAi(null)
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
   return (
     <Layout role="Admin" userInitials={initials} unreadCount={unread}>
       <div className="page-inner">
@@ -58,6 +82,25 @@ export default function Analytics() {
           <div style={{textAlign:'center',padding:'40px',color:'var(--text3)',fontSize:13}}>Loading...</div>
         ) : data && (
           <>
+            <div className="card" style={{marginBottom:16,border:'1px solid var(--blue)'}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:8}}>
+                <span style={{width:17,height:17,color:'var(--blue)',display:'flex'}}>{I.robot}</span>
+                <div style={{fontSize:14,fontWeight:700,color:'var(--text)'}}>AI analytics summary</div>
+                {aiLoading && <span style={{fontSize:12,color:'var(--text3)',marginLeft:'auto'}}>Thinking...</span>}
+              </div>
+              {ai ? (
+                <>
+                  <div style={{fontSize:13,fontWeight:600,color:'var(--blue)',marginBottom:8}}>{ai.headline}</div>
+                  {(ai.insights||[]).map((item:string,i:number)=>(
+                    <div key={i} style={{fontSize:13,color:'var(--text2)',marginBottom:5}}>- {item}</div>
+                  ))}
+                  <div style={{fontSize:12,color:'var(--text3)',marginTop:8}}>Recommended action: {ai.action}</div>
+                </>
+              ) : (
+                <div style={{fontSize:13,color:'var(--text3)'}}>AI summary will appear here when analytics data is ready.</div>
+              )}
+            </div>
+
             <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:16}}>
               {(data.kpis||[]).map((k:any,i:number)=>(
                 <div key={i} className="stat-card">

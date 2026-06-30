@@ -4,11 +4,15 @@ import Layout, { I } from '../../components/layout/Layout'
 import { userAPI, notifAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 
+const FAV_KEY = 'otw_favourite_rides'
+const FAV_RIDES_KEY = 'otw_favourite_ride_details'
+
 export default function Favourites() {
   const router = useRouter()
   const [profile,  setProfile]  = useState<any>(null)
   const [drivers,  setDrivers]  = useState<any[]>([])
   const [routes,   setRoutes]   = useState<any[]>([])
+  const [rides,    setRides]    = useState<any[]>([])
   const [unread,   setUnread]   = useState(0)
   const [loading,  setLoading]  = useState(true)
 
@@ -19,6 +23,7 @@ export default function Favourites() {
       notifAPI.getUnreadCount(),
     ]).then(([p, f, n]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
+      try { setRides(JSON.parse(localStorage.getItem(FAV_RIDES_KEY) || '[]')) } catch { setRides([]) }
       if (f.status === 'fulfilled') {
         setDrivers(f.value.data?.drivers || [])
         setRoutes(f.value.data?.routes || [])
@@ -43,11 +48,62 @@ export default function Favourites() {
     catch { setDrivers(p=>p.filter(d=>d.id!==id)); toast.success('Removed') }
   }
 
+  const removeRideFav = (id:number) => {
+    const nextRides = rides.filter(r => Number(r.rideId || r.id) !== id)
+    setRides(nextRides)
+    localStorage.setItem(FAV_RIDES_KEY, JSON.stringify(nextRides))
+    try {
+      const ids = JSON.parse(localStorage.getItem(FAV_KEY) || '[]').filter((x:number) => Number(x) !== id)
+      localStorage.setItem(FAV_KEY, JSON.stringify(ids))
+    } catch {}
+    toast.success('Removed')
+  }
+
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'AK'
 
   return (
     <Layout title="Favourites" role="Rider" userInitials={initials} unreadCount={unread}>
       <div className="page-inner">
+        {/* Favourite rides */}
+        <div style={{fontSize:15,fontWeight:600,color:'var(--text)',marginBottom:12}}>Favourite rides</div>
+        {loading ? (
+          <div style={{textAlign:'center',padding:'24px',color:'var(--text3)',fontSize:13}}>Loading...</div>
+        ) : rides.length === 0 ? (
+          <div className="card" style={{textAlign:'center',padding:'28px',marginBottom:16}}>
+            <span style={{width:36,height:36,display:'flex',margin:'0 auto 10px',color:'var(--text4)',opacity:.4}}>{I.heart}</span>
+            <div style={{fontSize:14,color:'var(--text3)'}}>No favourite rides yet</div>
+          </div>
+        ) : rides.map(r => {
+          const rideId = Number(r.rideId || r.id)
+          return (
+            <div key={rideId} className="card card-hover" style={{marginBottom:10,cursor:'pointer'}} onClick={() => {
+              try { sessionStorage.setItem('otw_ride_preview', JSON.stringify(r)) } catch {}
+              router.push(`/rider/ride/${rideId}`)
+            }}>
+              <div style={{display:'flex',alignItems:'flex-start',gap:10,marginBottom:10}}>
+                <div className="av">{r.driver?.initials || r.driver?.fullName?.slice(0,2).toUpperCase() || 'DR'}</div>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:13,fontWeight:600,color:'var(--text)',marginBottom:2}}>{r.driver?.fullName || 'Driver'}</div>
+                  <div style={{fontSize:12,color:'var(--text3)'}}>
+                    {r.departureTime ? new Date(r.departureTime).toLocaleString('en', {weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : 'Saved ride'}
+                  </div>
+                </div>
+                <button onClick={e=>{ e.stopPropagation(); removeRideFav(rideId) }} style={{background:'none',border:'none',cursor:'pointer',color:'var(--red)',width:18,height:18,display:'flex'}}>{I.trash}</button>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:5}}>
+                <div className="rdot-g"/>
+                <span style={{fontSize:13,fontWeight:500,color:'var(--text)'}}>{r.fromLocation}</span>
+              </div>
+              <div className="rconn" style={{marginBottom:5}}/>
+              <div style={{display:'flex',alignItems:'center',gap:8}}>
+                <div className="rdot-r"/>
+                <span style={{fontSize:13,fontWeight:500,color:'var(--text)'}}>{r.toLocation}</span>
+                <span style={{fontSize:13,fontWeight:700,color:'var(--green)',marginLeft:'auto'}}>${r.pricePerSeat}</span>
+              </div>
+            </div>
+          )
+        })}
+
         {/* Favourite drivers */}
         <div style={{fontSize:15,fontWeight:600,color:'var(--text)',marginBottom:12}}>Favourite drivers</div>
         {loading ? (
