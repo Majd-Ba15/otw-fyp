@@ -36,7 +36,7 @@ export default function UserManagement() {
       if (p.status === 'fulfilled') setProfile(p.value.data)
       const data = u.status === 'fulfilled' ? (u.value.data || []) : []
       setUsers(data)
-      setStats({ total:data.length, drivers:data.filter((x:any)=>x.role==='Driver').length, riders:data.filter((x:any)=>x.role==='Rider').length, banned:data.filter((x:any)=>x.status==='Banned').length })
+      setStats({ total:data.length, drivers:data.filter((x:any)=>x.role==='Driver').length, riders:data.filter((x:any)=>x.role==='Rider').length, banned:data.filter((x:any)=>x.isActive === false).length })
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
       setLoading(false)
     })
@@ -48,7 +48,7 @@ export default function UserManagement() {
     if (q && !u.fullName?.toLowerCase().includes(q) && !u.email?.toLowerCase().includes(q)) return false
     if (tab === 'Drivers' && u.role !== 'Driver') return false
     if (tab === 'Riders'  && u.role !== 'Rider')  return false
-    if (tab === 'Banned'  && u.status !== 'Banned') return false
+    if (tab === 'Banned'  && u.isActive !== false) return false
     return true
   })
   const getInitials = (name:string) => name?.split(' ').map((n:string)=>n[0]).join('').slice(0,1).toUpperCase() || '?'
@@ -109,7 +109,7 @@ export default function UserManagement() {
 
       // Update local state
       setUsers(users.filter(u => u.userId !== selectedUser.userId))
-      setStats({ ...stats, totalUsers: stats.totalUsers - 1 })
+      setStats({ ...stats, total: stats.total - 1, banned: stats.banned + 1 })
 
       toast.success('User banned!')
       setBanModal(false)

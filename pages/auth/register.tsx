@@ -11,6 +11,7 @@ export default function Register() {
   const [step,    setStep]    = useState(1)
   const [userId,  setUserId]  = useState(0)
   const [loading, setLoading] = useState(false)
+  const [resending, setResending] = useState(false)
   const [otp,     setOtp]     = useState('')
   const [showPw,  setShowPw]  = useState(false)
   const [agreed,  setAgreed]  = useState(false)
@@ -43,6 +44,7 @@ export default function Register() {
 
   const verifyOtp = async () => {
     if (otp.length !== 6) { toast.error('Enter the 6-digit code'); return }
+    if (!userId) { toast.error('Please register again to get a new verification code'); setStep(1); return }
     setLoading(true)
     try {
       const res = await authAPI.verifyOtp({ userId, otpCode: otp })
@@ -53,6 +55,19 @@ export default function Register() {
       router.push('/auth/profile-setup')
     } catch (err: any) { toast.error(err.response?.data?.message ?? 'Invalid code') }
     finally { setLoading(false) }
+  }
+
+  const resendOtp = async () => {
+    if (!userId) { toast.error('Please register again to get a new verification code'); setStep(1); return }
+    setResending(true)
+    try {
+      await authAPI.resendOtp({ userId })
+      toast.success('New code sent')
+    } catch (err: any) {
+      toast.error(err.response?.data?.message ?? 'Could not resend code')
+    } finally {
+      setResending(false)
+    }
   }
 
   const stepLabels = form.role === 'Driver' ? ['Account','Profile','Student ID','Car & Licence'] : ['Account','Profile','Student ID']
@@ -163,7 +178,7 @@ export default function Register() {
                 {loading ? 'Verifying...' : 'Verify email →'}
               </button>
               <div style={{ textAlign: 'center', marginTop: 14, fontSize: 14, color: 'var(--text3)' }}>
-                Didn't receive it? <span style={{ color: 'var(--green)', fontWeight: 500, cursor: 'pointer' }} onClick={() => authAPI.resendOtp({ userId })}>Resend code</span>
+                Didn't receive it? <button type="button" style={{ color: 'var(--green)', fontWeight: 500, cursor: resending ? 'default' : 'pointer', background: 'none', border: 'none', padding: 0, font: 'inherit', opacity: resending ? 0.6 : 1 }} onClick={resendOtp} disabled={resending}>{resending ? 'Sending...' : 'Resend code'}</button>
               </div>
             </>
           )}

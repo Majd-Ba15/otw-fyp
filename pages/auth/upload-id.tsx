@@ -122,8 +122,11 @@ export default function UploadId() {
         console.log('📤 Uploading student ID to backend...')
         const uploadRes = await userAPI.uploadId(file)
         console.log('✅ Backend upload successful:', uploadRes.data)
-      } catch (backendError) {
-        // Backend save failed, but local upload succeeded - user can still proceed
+      } catch (backendError: any) {
+        // Backend save failed, so admin would not be able to review the ID.
+        toast.error(backendError.response?.data?.message || 'Could not save ID photo to backend. Please try again.')
+        setLoading(false)
+        return
         console.error('❌ Backend upload failed:', backendError.response?.data || backendError.message)
       }
 
@@ -203,7 +206,7 @@ export default function UploadId() {
           <div className="notice notice-blue" style={{ marginBottom: 20 }}>
             <span style={{ width: 16, height: 16, display: 'flex', flexShrink: 0 }}>{I.info}</span>
             <span style={{ fontSize: 12 }}>
-              Your ID is saved directly on this server in <code>/public/uploads/</code>. No external service is needed.
+              Your ID is uploaded to the backend and stored for admin verification.
             </span>
           </div>
 

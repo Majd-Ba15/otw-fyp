@@ -69,18 +69,18 @@ export default function DriverSetup() {
       localStorage.setItem('otw_car_uploads', JSON.stringify(uploads))
     }
 
-    // 3. Try to save car data to backend (non-blocking)
-    userAPI.saveCar(car).catch(() => {})
-
-    // 4. Submit verification to make driver appear in admin verifications page
+    // 3. Save car data and submit verification to backend.
     try {
+      await userAPI.saveCar(car)
       await userAPI.submitVerification()
-      console.log('✅ Verification submitted - driver will appear in admin panel')
-    } catch (e) {
+      console.log('Verification submitted - driver will appear in admin panel')
+    } catch (e: any) {
       console.error('Verification submission failed:', e)
+      toast.error(e.response?.data?.message || 'Could not submit verification. Please log in and try again.')
+      setLoading(false)
+      return
     }
 
-    // 5. Navigate
     toast.success('Driver profile submitted! Awaiting admin approval.')
     setLoading(false)
     router.push('/driver/pending')
@@ -208,7 +208,7 @@ export default function DriverSetup() {
           <div className="notice notice-blue" style={{ marginBottom: 20 }}>
             <span style={{ width: 16, height: 16, display: 'flex', flexShrink: 0 }}>{Icons.info}</span>
             <span style={{ fontSize: 12 }}>
-              All files are saved locally. You cannot post rides until admin reviews and approves your profile.
+              Your car details are submitted to the backend. You cannot post rides until admin reviews and approves your profile.
             </span>
           </div>
 
