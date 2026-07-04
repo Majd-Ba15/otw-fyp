@@ -1,19 +1,29 @@
 // components/shared/MapRoute.tsx
 // Route preview map — shows pickup, dropoff and draws route via OSRM
-// Usage: <MapRoute from={{lat,lng}} to={{lat,lng}} />
+// Also reports distance/duration back via onRoute so the parent can display
+// the real road distance (not a straight line) and store it with the ride.
+// Usage: <MapRoute from={{lat,lng}} to={{lat,lng}} onRoute={(info) => ...} />
 // Dynamic import only — never SSR
 
 import { useEffect, useRef, useState } from 'react'
 
 interface LatLng { lat: number; lng: number }
-interface Props {
-  from:    LatLng
-  to:      LatLng
-  stops?:  Array<{ stopLat: number; stopLng: number; stopName: string }>
-  height?: number
+
+interface RouteInfo {
+  distanceKm:   number
+  durationMin:  number
+  usedFallback: boolean   // true if OSRM failed and we drew a straight line instead
 }
 
-export default function MapRoute({ from, to, stops = [], height = 200 }: Props) {
+interface Props {
+  from:     LatLng
+  to:       LatLng
+  stops?:   Array<{ stopLat: number; stopLng: number; stopName: string }>
+  height?:  number
+  onRoute?: (info: RouteInfo) => void   // reports distance/duration back up
+}
+
+export default function MapRoute({ from, to, stops = [], height = 200, onRoute }: Props) {
   const ref  = useRef<HTMLDivElement>(null)
   const mapRef = useRef<any>(null)
   const [error, setError] = useState(false)
@@ -22,8 +32,16 @@ export default function MapRoute({ from, to, stops = [], height = 200 }: Props) 
     if (!ref.current || mapRef.current) return
     if (typeof window === 'undefined') return
 
+    let cancelled = false
+
     // Dynamic import of leaflet CSS + library
     import('leaflet').then(L => {
+      // Guard against React Strict Mode's double-mount (dev): the second
+      // resolved import must not re-init a container that already has a map,
+      // or Leaflet throws "Map container is already initialized".
+      if (cancelled || !ref.current || mapRef.current) return
+      if ((ref.current as any)._leaflet_id) { (ref.current as any)._leaflet_id = undefined }
+
       // Fix default marker icons broken by webpack
       delete (L.Icon.Default.prototype as any)._getIconUrl
       L.Icon.Default.mergeOptions({
@@ -88,20 +106,40 @@ export default function MapRoute({ from, to, stops = [], height = 200 }: Props) 
         .then(r => r.json())
         .then(data => {
           if (data.routes?.[0]) {
-            L.geoJSON(data.routes[0].geometry, {
+            const route = data.routes[0]
+            L.geoJSON(route.geometry, {
               style: { color: '#16a36b', weight: 4, opacity: 0.8 }
             }).addTo(map)
+
+            onRoute?.({
+              distanceKm:   Math.round((route.distance / 1000) * 10) / 10,
+              durationMin:  Math.round(route.duration / 60),
+              usedFallback: false,
+            })
+          } else {
+            throw new Error('no route returned')
           }
         })
         .catch(() => {
-          // If OSRM fails just draw a straight line
+          // If OSRM fails just draw a straight line — and report fallback so the
+          // parent can show "estimated" instead of presenting it as exact
           L.polyline([[from.lat,from.lng],[to.lat,to.lng]], {
             color: '#16a36b', weight: 3, dashArray: '6 4'
           }).addTo(map)
+
+          // Haversine straight-line distance as a rough fallback
+          const R = 6371
+          const dLat = (to.lat - from.lat) * Math.PI / 180
+          const dLng = (to.lng - from.lng) * Math.PI / 180
+          const a = Math.sin(dLat/2)**2 + Math.cos(from.lat*Math.PI/180) * Math.cos(to.lat*Math.PI/180) * Math.sin(dLng/2)**2
+          const straightKm = Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)) * 10) / 10
+
+          onRoute?.({ distanceKm: straightKm, durationMin: 0, usedFallback: true })
         })
-    }).catch(() => setError(true))
+    }).catch(() => { if (!cancelled) setError(true) })
 
     return () => {
+      cancelled = true
       if (mapRef.current) { mapRef.current.remove(); mapRef.current = null }
     }
   }, [])

@@ -3,7 +3,7 @@
 // For rides without explicit lat/lng, city names are resolved first from a
 // local Lebanese lookup, then geocoded live via Nominatim as a last resort.
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 interface Ride {
   rideId:         number
@@ -110,6 +110,11 @@ function resolveCoords(name: string): [number, number] | null {
   return null
 }
 
+// OSRM route geometry cache — key is the waypoint string. Value: GeoJSON
+// LineString geometry (routed), or null when OSRM had no answer (draw dashed
+// straight instead). Cached so selection/redraws never re-hit the OSRM server.
+const routeGeoCache: Record<string, any> = {}
+
 // Nominatim geocode — last resort for unrecognised addresses
 const geocodeCache: Record<string, [number, number] | null> = {}
 async function geocode(address: string): Promise<[number, number] | null> {
@@ -156,6 +161,8 @@ export default function MapRides({ rides, selected, onSelect, height = 400 }: Pr
   const ref       = useRef<HTMLDivElement>(null)
   const mapRef    = useRef<any>(null)
   const layersRef = useRef<any[]>([])
+  const fitSigRef = useRef<string>('')                  // last fitBounds signature (rides+selection)
+  const [routeVersion, setRouteVersion] = useState(0)   // bumps when an OSRM route resolves
 
   // Initialise map once
   useEffect(() => {
@@ -230,13 +237,35 @@ export default function MapRides({ rides, selected, onSelect, height = 400 }: Pr
         }
         if (to) routePoints.push(to)
 
-        // Polyline
+        // Route line: prefer the OSRM road-following geometry; fall back to a
+        // dashed straight line when OSRM has no answer for these waypoints.
         if (routePoints.length >= 2) {
-          const line = L.polyline(routePoints, {
-            color, weight, opacity,
-            dashArray: isActive ? undefined : '7 5',
-          }).addTo(map)
-          layersRef.current.push(line)
+          const key    = routePoints.map(p => `${p[0].toFixed(5)},${p[1].toFixed(5)}`).join(';')
+          const cached = routeGeoCache[key]
+
+          if (cached) {
+            // Routed — solid line following real streets
+            const line = L.geoJSON(cached, { style: { color, weight, opacity } }).addTo(map)
+            layersRef.current.push(line)
+          } else {
+            // Not routed (not fetched yet, or OSRM failed) — dashed straight line
+            const line = L.polyline(routePoints, {
+              color, weight, opacity,
+              dashArray: isActive ? undefined : '7 5',
+            }).addTo(map)
+            layersRef.current.push(line)
+
+            // Fetch the real route ONCE per waypoint set (undefined = never tried).
+            // On resolve we cache it and bump routeVersion so this redraws routed.
+            if (cached === undefined) {
+              const wp = routePoints.map(p => `${p[1]},${p[0]}`).join(';')
+              fetch(`https://router.project-osrm.org/route/v1/driving/${wp}?overview=full&geometries=geojson`)
+                .then(r => r.json())
+                .then(data => { routeGeoCache[key] = data.routes?.[0]?.geometry ?? null; setRouteVersion(v => v + 1) })
+                .catch(() => { routeGeoCache[key] = null; setRouteVersion(v => v + 1) })
+            }
+          }
+
           routePoints.forEach(p => allPoints.push(p))
         }
 
@@ -311,8 +340,11 @@ export default function MapRides({ rides, selected, onSelect, height = 400 }: Pr
         }
       })
 
-      // Fit bounds to all visible ride points
-      if (allPoints.length > 0) {
+      // Fit bounds only when the ride set or selection changes — NOT on every
+      // OSRM route that streams in, so the map doesn't keep re-zooming/jumping.
+      const fitSig = rides.map(r => r.rideId).join(',') + '|' + (selected?.rideId ?? '')
+      if (allPoints.length > 0 && fitSigRef.current !== fitSig) {
+        fitSigRef.current = fitSig
         try {
           map.fitBounds(L.latLngBounds(allPoints), { padding: [48, 48], maxZoom: 14 })
         } catch {}
@@ -324,7 +356,7 @@ export default function MapRides({ rides, selected, onSelect, height = 400 }: Pr
         if (ride) onSelect(ride)
       }
     })
-  }, [rides, selected])
+  }, [rides, selected, routeVersion])
 
   return (
     <>

@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import dynamic from 'next/dynamic'
 import Layout, { I } from '../../components/layout/Layout'
 import { rideAPI, userAPI } from '../../services/api'
+import { isRideActive } from '../../lib/rideStatus'
 
 const MapRides  = dynamic(() => import('../../components/shared/MapRides'),  { ssr: false })
 const MapPicker = dynamic(() => import('../../components/shared/MapPicker'), { ssr: false })
@@ -31,7 +32,9 @@ export default function SearchRides() {
     userAPI.getMe().then(r => setProfile(r.data)).catch(() => {})
     rideAPI.search({})
       .then(r => {
-        const rides = r.data || []
+        // Only show active rides — hide expired (past departure / past recurring
+        // end date) and completed/cancelled ones from the map and the list.
+        const rides = (r.data || []).filter(isRideActive)
         setAllRides(rides)
         setDisplayed(rides)
         if (rides.length > 1) runAiMatch(rides)
@@ -45,9 +48,10 @@ export default function SearchRides() {
           { rideId:4, fromLocation:'Jeh',     fromLat:33.5900, fromLng:35.5400, toLocation:'Baroun',   toLat:33.4600, toLng:35.4800, stops:'Nabatieh',        pricePerSeat:4,  availableSeats:4, departureTime:new Date(Date.now()+2*3600000).toISOString(),  driver:{ fullName:'Khalil Mrad', averageRating:4.6 } },
           { rideId:5, fromLocation:'Baalbek', fromLat:34.0050, fromLng:36.2100, toLocation:'Beirut',   toLat:33.8869, toLng:35.5131, stops:'Zahle',           pricePerSeat:10, availableSeats:2, departureTime:new Date(Date.now()+4*3600000).toISOString(),  driver:{ fullName:'Rania Khoury',averageRating:5.0 } },
         ]
-        setAllRides(demo)
-        setDisplayed(demo)
-        if (demo.length > 1) runAiMatch(demo)
+        const activeDemo = demo.filter(isRideActive)
+        setAllRides(activeDemo)
+        setDisplayed(activeDemo)
+        if (activeDemo.length > 1) runAiMatch(activeDemo)
       })
       .finally(() => setLoadingAll(false))
   }, [])
@@ -103,6 +107,7 @@ export default function SearchRides() {
         })
       }
 
+      results = results.filter(isRideActive)   // never surface expired rides in search
       setDisplayed(results)
       if (results.length > 1) runAiMatch(results)
     } catch {
@@ -113,7 +118,7 @@ export default function SearchRides() {
         const fromMatch = !fl || r.fromLocation.toLowerCase().includes(fl) || (r.stops && String(r.stops).toLowerCase().includes(fl))
         const toMatch   = !tl || r.toLocation.toLowerCase().includes(tl)
         return fromMatch && toMatch
-      })
+      }).filter(isRideActive)
       setDisplayed(filtered)
     } finally {
       setSearching(false)

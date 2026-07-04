@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Layout, { I } from '../../components/layout/Layout'
 import { rideAPI, userAPI, notifAPI } from '../../services/api'
+import { isRideExpired } from '../../lib/rideStatus'
 
 export default function MyRides() {
   const router = useRouter()
@@ -25,7 +26,13 @@ export default function MyRides() {
   }, [])
 
   const initials  = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'SM'
-  const filtered  = tab === 'All' ? rides : rides.filter(r => r.status === tab || (tab==='Full'&&r.status==='Full'))
+  // A ride is "expired" (missed) only if it's still scheduled (Upcoming/Full) but
+  // its time has passed — never for Active (in progress), Completed or Cancelled.
+  const isExpired = (r:any) => (r.status === 'Upcoming' || r.status === 'Full') && isRideExpired(r)
+  const filtered  =
+    tab === 'All'      ? rides :
+    tab === 'Expired'  ? rides.filter(isExpired) :
+                         rides.filter(r => r.status === tab && !isExpired(r))
   const statusBadge = (s:string) => s==='Full'?'badge-amber':s==='Cancelled'?'badge-red':'badge-green'
 
   return (
@@ -39,7 +46,7 @@ export default function MyRides() {
         </div>
 
         <div style={{display:'flex',gap:0,background:'var(--bg2)',borderRadius:8,padding:3,marginBottom:14}}>
-          {['All','Active','Upcoming','Full','Cancelled'].map(t=>(
+          {['All','Active','Upcoming','Full','Expired','Cancelled'].map(t=>(
             <button key={t} onClick={()=>setTab(t)} style={{flex:1,padding:'6px 0',border:'none',borderRadius:6,background:tab===t?'var(--bg-card)':'transparent',fontWeight:tab===t?600:400,fontSize:12,color:tab===t?'var(--text)':'var(--text3)',cursor:'pointer',boxShadow:tab===t?'var(--shadow-sm)':'none',transition:'all .15s'}}>{t}</button>
           ))}
         </div>
@@ -59,7 +66,9 @@ export default function MyRides() {
               <span style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{r.fromLocation}</span>
               <span style={{color:'var(--text3)'}}>→</span>
               <span style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{r.toLocation}</span>
-              <span className={`badge ${statusBadge(r.status)}`} style={{marginLeft:'auto'}}>{r.status}</span>
+              {isExpired(r)
+                ? <span className="badge" style={{marginLeft:'auto',background:'var(--bg3)',color:'var(--text3)'}}>Expired</span>
+                : <span className={`badge ${statusBadge(r.status)}`} style={{marginLeft:'auto'}}>{r.status}</span>}
             </div>
             <div style={{display:'flex',gap:16,fontSize:12,color:'var(--text3)'}}>
               <span style={{display:'flex',alignItems:'center',gap:4}}>

@@ -1,5 +1,7 @@
 // components/shared/MapLive.tsx
-// Live tracking map — driver marker moves in real time via SignalR
+// Live tracking map — driver marker moves in real time via SignalR.
+// The ride path is fetched ONCE from OSRM (real road-following route) on mount,
+// NOT re-fetched on every GPS update — only the driver marker position updates.
 // Usage: <MapLive driverLat={} driverLng={} toLat={} toLng={} />
 
 import { useEffect, useRef } from 'react'
@@ -16,6 +18,7 @@ export default function MapLive({ driverLat, driverLng, toLat, toLng, height = 2
   const ref       = useRef<HTMLDivElement>(null)
   const mapRef    = useRef<any>(null)
   const markerRef = useRef<any>(null)
+  const routeRef  = useRef<any>(null)   // holds the drawn ride-path layer
 
   // Init map once
   useEffect(() => {
@@ -61,11 +64,36 @@ export default function MapLive({ driverLat, driverLng, toLat, toLng, height = 2
         .addTo(map).bindPopup('Your destination')
 
       map.fitBounds([[driverLat, driverLng], [toLat, toLng]], { padding: [30, 30] })
+
+      // ── Fetch the exact road-following ride path via OSRM ──────────────
+      // Runs only inside this mount effect (deps: []), so it fires ONCE per
+      // component lifetime — NOT on every GPS update. The line is the planned
+      // route; only the driver marker moves after this.
+      fetch(`https://router.project-osrm.org/route/v1/driving/${driverLng},${driverLat};${toLng},${toLat}?overview=full&geometries=geojson`)
+        .then(r => r.json())
+        .then(data => {
+          if (cancelled || !mapRef.current) return
+          if (data.routes?.[0]) {
+            routeRef.current = L.geoJSON(data.routes[0].geometry, {
+              style: { color: '#185FA5', weight: 4, opacity: 0.75 }
+            }).addTo(mapRef.current)
+          } else {
+            throw new Error('no route')
+          }
+        })
+        .catch(() => {
+          if (cancelled || !mapRef.current) return
+          // OSRM unreachable — fall back to a straight dashed line so the UI never breaks
+          routeRef.current = L.polyline(
+            [[driverLat, driverLng], [toLat, toLng]],
+            { color: '#185FA5', weight: 3, opacity: 0.6, dashArray: '6 4' }
+          ).addTo(mapRef.current)
+        })
     })
 
     return () => {
       cancelled = true
-      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; markerRef.current = null }
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; markerRef.current = null; routeRef.current = null }
     }
   }, [])
 

@@ -5,6 +5,7 @@ import Layout, { I } from '../../components/layout/Layout'
 import { rideAPI, userAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 const MapPicker = dynamic(()=>import('../../components/shared/MapPicker'),{ssr:false})
+const MapRoute  = dynamic(()=>import('../../components/shared/MapRoute'),{ssr:false})
 
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
 
@@ -16,6 +17,7 @@ export default function PostRide() {
   const [priceReason, setPriceReason] = useState('')
   const [showMapFrom, setShowMapFrom] = useState(false)
   const [showMapTo,   setShowMapTo]   = useState(false)
+  const [routeInfo, setRouteInfo] = useState<{ distanceKm:number; durationMin:number; usedFallback:boolean } | null>(null)
   const [form, setForm] = useState({
     from:'', to:'', fromLat:0, fromLng:0, toLat:0, toLng:0,
     departureTime:'', recurring:false, recurringDays:[] as string[],
@@ -32,7 +34,9 @@ export default function PostRide() {
       const res = await fetch('/api/ai/driver-assist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, mode }),
+        // Send the real road distance (from OSRM) so pricing is based on actual
+        // km, not a string-length guess. May be undefined until a route is drawn.
+        body: JSON.stringify({ ...form, distanceKm: routeInfo?.distanceKm, mode }),
       })
       const data = await res.json()
       if (mode === 'price' && data.price) {
@@ -55,7 +59,7 @@ export default function PostRide() {
     if(!form.from||!form.to||!form.departureTime){toast.error('Please fill all required fields');return}
     setLoading(true)
     try{
-      await rideAPI.post({fromLocation:form.from,toLocation:form.to,fromLat:form.fromLat||null,fromLng:form.fromLng||null,toLat:form.toLat||null,toLng:form.toLng||null,departureTime:new Date(form.departureTime).toISOString(),totalSeats:form.seats,pricePerSeat:form.price,genderPreference:form.genderPref,notes:form.notes,isRecurring:form.recurring,recurringDays:form.recurringDays.join(',')})
+      await rideAPI.post({fromLocation:form.from,toLocation:form.to,fromLat:form.fromLat||null,fromLng:form.fromLng||null,toLat:form.toLat||null,toLng:form.toLng||null,departureTime:new Date(form.departureTime).toISOString(),totalSeats:form.seats,pricePerSeat:form.price,genderPreference:form.genderPref,notes:form.notes,isRecurring:form.recurring,recurringDays:form.recurringDays.join(','),distanceKm:routeInfo?.distanceKm??null,durationMin:routeInfo?.durationMin??null})
       toast.success('Ride posted!'); router.push('/driver/rides')
     }catch(e:any){toast.error(e.response?.data?.message||'Failed to post ride')}
     finally{setLoading(false)}
@@ -89,6 +93,28 @@ export default function PostRide() {
             </div>
             {showMapTo && <div style={{marginTop:8}}><MapPicker label="" onPick={(lat,lng,name)=>{setForm(p=>({...p,toLat:lat,toLng:lng,to:name}));setShowMapTo(false)}} height={160}/></div>}
           </div>
+
+          {/* Route preview — appears once BOTH points are set. Draws the real
+              road-following route via OSRM (respects one-way streets / legal turns
+              as tagged in OpenStreetMap), not a straight line. */}
+          {form.fromLat!==0 && form.fromLng!==0 && form.toLat!==0 && form.toLng!==0 && (
+            <div style={{marginTop:12}}>
+              <div style={{fontSize:11,color:'var(--text3)',marginBottom:4,fontWeight:500}}>Route preview — real roads, not a straight line</div>
+              <MapRoute
+                key={`${form.fromLat},${form.fromLng},${form.toLat},${form.toLng}`}
+                from={{lat:form.fromLat,lng:form.fromLng}}
+                to={{lat:form.toLat,lng:form.toLng}}
+                onRoute={setRouteInfo}
+                height={180}
+              />
+              {routeInfo && (
+                <div style={{marginTop:6,fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:6,color:routeInfo.usedFallback?'#A66A00':'#16a36b'}}>
+                  {routeInfo.usedFallback?'⚠️':'🛣️'}
+                  <span>{routeInfo.distanceKm} km{routeInfo.durationMin>0 && ` · ~${routeInfo.durationMin} min driving`}{routeInfo.usedFallback && ' (estimated — could not reach routing service)'}</span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Schedule */}
