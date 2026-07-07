@@ -9,7 +9,8 @@ export default function DriverProfile() {
   const router  = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
   const [profile, setProfile] = useState<any>(null)
-  const [stats,   setStats]   = useState<any>({ totalRides:0, rating:0, onTimePercent:0 })
+  const [stats,   setStats]   = useState<any>(null)
+  const [car,     setCar]     = useState<any>(null)
   const [unread,  setUnread]  = useState(0)
   const [loading, setLoading] = useState(true)
 
@@ -17,10 +18,12 @@ export default function DriverProfile() {
     Promise.allSettled([
       userAPI.getMe(),
       userAPI.getStats(),
+      userAPI.getCar(),
       notifAPI.getUnreadCount(),
-    ]).then(([p, s, n]) => {
+    ]).then(([p, s, c, n]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
-      setStats(s.status === 'fulfilled' ? s.value.data : { totalRides:0, rating:0, onTimePercent:0 })
+      if (s.status === 'fulfilled') setStats(s.value.data)
+      if (c.status === 'fulfilled') setCar(c.value.data)
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
       setLoading(false)
     })
@@ -38,14 +41,10 @@ export default function DriverProfile() {
     } catch { toast.error('Upload failed') }
   }
 
+  // Only real, working destinations — earnings badge is the live computed total
   const menuItems = [
-    { icon:I.car,     label:'Vehicle Information',  href:'/driver/vehicle',    badge:null },
-    { icon:I.dollar,  label:'Earnings & Payouts',   href:'/driver/earnings',   badge:`$${stats?.earnings||450}` },
-    { icon:I.sos,     label:'Emergency Contacts',   href:'/driver/emergency',  badge:null },
-    { icon:I.file,    label:'Documents',             href:'#',                 badge:null },
-    { icon:I.bell,    label:'Notifications',         href:'/notifications',    badge:unread>0?String(unread):null },
-    { icon:I.shield,  label:'Safety & Privacy',      href:'#',                 badge:null },
-    { icon:I.info,    label:'Help & Support',        href:'#',                 badge:null },
+    { icon:I.car,     label:'Vehicle Information',  href:'/driver/vehicle',   badge: car?.model || null },
+    { icon:I.dollar,  label:'Earnings',             href:'/driver/earnings',  badge: stats?.earnings != null ? `$${Number(stats.earnings).toFixed(2)}` : null },
   ]
 
   if (loading && !profile) return (
@@ -71,12 +70,12 @@ export default function DriverProfile() {
             </button>
             <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={uploadPhoto}/>
           </div>
-          <div style={{fontSize:20,fontWeight:700,color:'white'}}>{profile?.fullName||'Sarah Malik'}</div>
+          <div style={{fontSize:20,fontWeight:700,color:'white'}}>{profile?.fullName || '—'}</div>
           <div style={{display:'flex',alignItems:'center',gap:4,justifyContent:'center',marginTop:6}}>
             <span style={{width:14,height:14,color:'#F59E0B',display:'flex'}}>{I.starF}</span>
-            <span style={{fontSize:14,color:'rgba(255,255,255,0.9)'}}>{stats?.rating||4.9} rating</span>
+            <span style={{fontSize:14,color:'rgba(255,255,255,0.9)'}}>{Number(stats?.averageRating || 0).toFixed(1)} rating</span>
           </div>
-          <div style={{fontSize:12,color:'rgba(255,255,255,0.65)',marginTop:4}}>{profile?.faculty||'UTM, Johor Bahru'}</div>
+          {profile?.faculty && <div style={{fontSize:12,color:'rgba(255,255,255,0.65)',marginTop:4}}>{profile.faculty}</div>}
           {profile?.isVerified && (
             <span className="badge badge-green" style={{marginTop:8,display:'inline-flex'}}>
               <span style={{width:12,height:12,display:'flex'}}>{I.checkC}</span> Verified Driver
@@ -87,9 +86,9 @@ export default function DriverProfile() {
         {/* Stats */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:12}}>
           {[
-            {val:stats?.totalRides||0,   label:'Total Rides'},
-            {val:stats?.rating||4.9,     label:'Rating'},
-            {val:`${stats?.onTimePercent||98}%`, label:'On Time'},
+            {val:stats?.driverCompletedRides ?? 0,                      label:'Rides completed'},
+            {val:Number(stats?.averageRating || 0).toFixed(1),          label:'Rating'},
+            {val:`$${Number(stats?.earnings || 0).toFixed(0)}`,         label:'Earned'},
           ].map((s,i) => (
             <div key={i} className="stat-card" style={{textAlign:'center'}}>
               <div style={{fontSize:20,fontWeight:700,color:'var(--text)'}}>{s.val}</div>
@@ -101,7 +100,7 @@ export default function DriverProfile() {
         {/* Car shortcut */}
         <div className="card" style={{cursor:'pointer',display:'flex',alignItems:'center',gap:10,marginBottom:12}} onClick={()=>router.push('/driver/vehicle')}>
           <span style={{width:18,height:18,color:'var(--text3)',display:'flex'}}>{I.car}</span>
-          <span style={{flex:1,fontSize:13,color:'var(--text2)'}}>{profile?.car?.model||'No vehicle added'} {profile?.car?.plateNumber ? `· ${profile.car.plateNumber}` : ''}</span>
+          <span style={{flex:1,fontSize:13,color:'var(--text2)'}}>{car?.model||'No vehicle added'} {car?.plateNumber ? `· ${car.plateNumber}` : ''}</span>
           <span style={{width:14,height:14,color:'var(--text3)',display:'flex',transform:'rotate(180deg)'}}>{I.back}</span>
         </div>
 
@@ -111,8 +110,8 @@ export default function DriverProfile() {
           {[
             {icon:I.phone, val:profile?.phone||'—'},
             {icon:I.mail,  val:profile?.email||'—'},
-            {icon:I.pin,   val:profile?.faculty||'UTM, Johor Bahru'},
-            {icon:I.clock, val:`Joined ${profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en',{month:'long',year:'numeric'}) : 'Jan 2024'}`},
+            {icon:I.pin,   val:profile?.faculty||'—'},
+            {icon:I.clock, val:`Joined ${profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en',{month:'long',year:'numeric'}) : '—'}`},
           ].map((c,i) => (
             <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:i<3?'1px solid var(--border)':'none',fontSize:13,color:'var(--text2)'}}>
               <span style={{width:15,height:15,color:'var(--text3)',display:'flex'}}>{c.icon}</span>{c.val}

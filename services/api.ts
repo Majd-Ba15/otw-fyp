@@ -59,6 +59,7 @@ export const userAPI = {
     })
     return API.post('/api/users/upload-id', { base64, name: f.name, type: f.type })
   },
+  getCar:          ()                   => API.get('/api/users/car'),
   saveCar:         (d: any)             => API.post('/api/users/car', d),
   uploadCarPhoto:  (f: File, t: string) => uploadFile(f, `?type=${t}`),
   submitVerification: ()               => API.post('/api/users/submit-verification', {}),

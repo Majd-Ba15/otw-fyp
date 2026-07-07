@@ -75,13 +75,19 @@ export default function ProfileSetup() {
       }
     }
 
-    // 2. Save profile data to localStorage as reliable fallback
+    // 2. Save profile data to localStorage as fallback
     const profileData = { ...form, photoUrl }
     localStorage.setItem('otw_profile_setup', JSON.stringify(profileData))
 
-    // 3. Navigate forward — never call the backend here because a 401 would
-    //    trigger the axios interceptor's window.location redirect to /auth/login
-    //    before router.push can fire. The profile data will sync after login.
+    // 3. Save to the backend so Student ID / Faculty / Phone appear on the
+    //    profile page. OTP verification now issues a JWT, so this is
+    //    authenticated; failure is non-fatal (localStorage keeps a copy).
+    try {
+      await userAPI.updateMe({ studentId: form.studentId, faculty: form.faculty, phone: form.phone, gender: form.gender })
+    } catch {
+      // offline/backend down — continue; data can be re-entered from Profile
+    }
+
     toast.success('Profile saved!')
     setLoading(false)
     router.push('/auth/upload-id')

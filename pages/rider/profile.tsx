@@ -12,9 +12,11 @@ export default function RiderProfile() {
   const [editing, setEditing] = useState(false)
   const [form,    setForm]    = useState({ phone: '' })
   const [loading, setLoading] = useState(false)
+  const [ridesTaken, setRidesTaken] = useState(0)
 
   useEffect(() => {
     userAPI.getMe().then(r => { setProfile(r.data); setForm({ phone: r.data.phone || '' }) }).catch(() => {})
+    userAPI.getStats().then(r => setRidesTaken(r.data?.completedRides || 0)).catch(() => {})
   }, [])
 
   const save = async () => {
@@ -53,19 +55,14 @@ export default function RiderProfile() {
             <span className="badge badge-green">Rider</span>
             {profile?.isVerified && <span className="badge badge-green">Verified</span>}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 4, fontSize: 13, color: '#F59E0B', marginTop: 6 }}>
-            <span style={{ width: 14, height: 14, display: 'flex' }}>{I.starF}</span>
-            {profile?.averageRating || '4.8'} ({profile?.totalRides || 0} rides)
-          </div>
-          <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 3 }}>Member since {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en', { month: 'long', year: 'numeric' }) : 'Jan 2024'}</div>
+          <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 6 }}>Member since {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en', { month: 'long', year: 'numeric' }) : '—'}</div>
         </div>
 
-        {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 12 }}>
+        {/* Stats — riders aren't rated, so no stars; only real numbers */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 12 }}>
           {[
-            { val: profile?.totalRides || 0, label: 'Total rides', icon: I.pin,   color: 'var(--green)' },
-            { val: profile?.averageRating || '4.8', label: 'Rating', icon: I.star, color: '#F59E0B' },
-            { val: '100%', label: 'On time', icon: I.clock, color: 'var(--blue)' },
+            { val: ridesTaken, label: 'Rides taken', icon: I.pin, color: 'var(--green)' },
+            { val: profile?.isVerified ? 'Verified' : 'Pending', label: 'Account status', icon: I.shield, color: profile?.isVerified ? 'var(--green)' : '#F59E0B' },
           ].map((s, i) => (
             <div key={i} className="stat-card" style={{ textAlign: 'center' }}>
               <span style={{ width: 20, height: 20, color: s.color, display: 'flex', margin: '0 auto 4px' }}>{s.icon}</span>

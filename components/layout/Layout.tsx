@@ -85,39 +85,47 @@ export function useDarkMode() {
 }
 
 // ── Sidebar config ──────────────────────────────────────────────────
+// Flow pages (ride detail, booking confirm, rate driver) are intentionally NOT
+// listed — they're steps reached by clicking a ride/booking, not destinations.
 const RIDER_NAV = [
   { section: 'Rider' },
   { path:'/rider/dashboard',    icon:'dash',    label:'Dashboard' },
   { path:'/rider/search',       icon:'search',  label:'Search rides' },
   { path:'/rider/request',      icon:'send',    label:'Request ride' },
-  { path:'/rider/ride/[id]',    icon:'pin',     label:'Ride detail' },
   { path:'/rider/ride/active',  icon:'wifi',    label:'Active ride' },
-  { path:'/rider/booking/confirm',icon:'ticket',label:'Booking confirm' },
+  { section: 'My trips' },
   { path:'/rider/history',      icon:'history', label:'History' },
-  { path:'/rider/rate/[id]',    icon:'star',    label:'Rate driver' },
-  { path:'/rider/profile',      icon:'user',    label:'Profile' },
-  { path:'/rider/favourites',   icon:'heart',   label:'Favourites' },
   { path:'/rider/waitlist',     icon:'clock',   label:'Waitlist' },
-  { path:'/rider/report',       icon:'alert',   label:'Report issue' },
+  { path:'/rider/favourites',   icon:'heart',   label:'Favourites' },
+  { section: 'Account' },
+  { path:'/rider/profile',      icon:'user',    label:'Profile' },
+  { path:'/chat/[id]',          icon:'msg',     label:'Chat' },
+  { path:'/notifications',      icon:'bell',    label:'Notifications' },
   { path:'/rider/chat-ai',      icon:'robot',   label:'AI assistant' },
+  { section: 'Safety' },
+  { path:'/sos',                icon:'sos',     label:'SOS' },
+  { path:'/rider/report',       icon:'alert',   label:'Report issue' },
 ]
+// Flow pages (manage ride, passengers, rate riders) are NOT listed — they're
+// reached from a ride card / booking, not from the menu.
 const DRIVER_NAV = [
   { section: 'Driver' },
   { path:'/driver/dashboard',   icon:'dash',    label:'Dashboard' },
   { path:'/driver/post',        icon:'plus',    label:'Post a ride' },
   { path:'/driver/availability',icon:'clock',   label:'Availability' },
-  { path:'/driver/rides',       icon:'car',     label:'My rides' },
-  { path:'/driver/ride/[id]',   icon:'settings',label:'Manage ride' },
-  { path:'/driver/requests',    icon:'bell',    label:'Requests' },
-  { path:'/driver/passengers/[id]',icon:'users',label:'Passengers' },
   { path:'/driver/ride/active', icon:'wifi',    label:'Active ride' },
-  { path:'/driver/history',     icon:'history', label:'History' },
-  { path:'/driver/rate/[id]',   icon:'star',    label:'Rate riders' },
+  { section: 'My rides' },
+  { path:'/driver/rides',       icon:'car',     label:'My rides' },
+  { path:'/driver/requests',    icon:'bell',    label:'Requests' },
   { path:'/driver/recurring',   icon:'repeat',  label:'Recurring' },
   { path:'/driver/stops',       icon:'map',     label:'Multiple stops' },
+  { path:'/driver/history',     icon:'history', label:'History' },
+  { section: 'Account' },
   { path:'/driver/earnings',    icon:'earnings',label:'Earnings' },
   { path:'/driver/vehicle',     icon:'car',     label:'Vehicle' },
   { path:'/driver/profile',     icon:'user',    label:'Profile' },
+  { path:'/chat/[id]',          icon:'msg',     label:'Chat' },
+  { path:'/notifications',      icon:'bell',    label:'Notifications' },
   { path:'/driver/chat-ai',     icon:'robot',   label:'AI assistant' },
 ]
 const ADMIN_NAV = [
@@ -131,15 +139,6 @@ const ADMIN_NAV = [
   { path:'/admin/reports/[id]', icon:'file',    label:'Report detail' },
   { path:'/admin/analytics',    icon:'chart',   label:'Analytics' },
   { path:'/admin/demand',       icon:'trending',label:'Demand planning' },
-  { section: 'Shared' },
-  { path:'/chat/[id]',          icon:'msg',     label:'Chat' },
-  { path:'/notifications',      icon:'bell',    label:'Notifications' },
-]
-const SHARED_NAV = [
-  { section: 'Shared' },
-  { path:'/chat/[id]',   icon:'msg',  label:'Chat' },
-  { path:'/notifications',icon:'bell',label:'Notifications' },
-  { path:'/sos',          icon:'sos', label:'SOS' },
 ]
 
 type Role = 'Rider'|'Driver'|'Admin'
@@ -168,9 +167,9 @@ export default function Layout({ children, role, title, showBack, onBack, unread
   }
 
   const nav =
-    role === 'Driver' ? [...DRIVER_NAV, ...SHARED_NAV] :
+    role === 'Driver' ? DRIVER_NAV :
     role === 'Admin'  ? ADMIN_NAV :
-                        [...RIDER_NAV,  ...SHARED_NAV]
+                        RIDER_NAV
 
   const tbClass =
     role === 'Driver' ? 'topbar driver-bar' :
@@ -232,7 +231,7 @@ export default function Layout({ children, role, title, showBack, onBack, unread
           <button className="topbar-icon-btn" onClick={toggle} aria-label="Toggle theme">
             <span style={{width:16,height:16,display:'flex'}}>{dark ? I.sun : I.moon}</span>
           </button>
-          {role && (
+          {role && role !== 'Admin' && (
             <button className="topbar-icon-btn topbar-bell" onClick={() => router.push('/notifications')} aria-label="Notifications">
               <span style={{width:16,height:16,display:'flex'}}>{I.bell}</span>
               {unreadCount > 0 && <span className="nb">{unreadCount > 9 ? '9+' : unreadCount}</span>}

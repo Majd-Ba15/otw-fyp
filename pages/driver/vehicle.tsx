@@ -16,13 +16,14 @@ export default function Vehicle() {
   useEffect(() => {
     Promise.allSettled([
       userAPI.getMe(),
+      userAPI.getCar(),          // car saved during driver registration
       notifAPI.getUnreadCount(),
-    ]).then(([p, n]) => {
-      if (p.status === 'fulfilled') {
-        setProfile(p.value.data)
-        const c = p.value.data?.car
-        setCar(c)
-        setEditForm({ model:c?.model||'', plateNumber:c?.plateNumber||'', colour:c?.colour||'', year:c?.year||'2020', totalSeats:c?.totalSeats||4 })
+    ]).then(([p, c, n]) => {
+      if (p.status === 'fulfilled') setProfile(p.value.data)
+      if (c.status === 'fulfilled' && c.value.data) {
+        const car = c.value.data
+        setCar(car)
+        setEditForm({ model:car.model||'', plateNumber:car.plateNumber||'', colour:car.colour||'', totalSeats:car.totalSeats||4 })
       }
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
       setLoading(false)
@@ -35,14 +36,14 @@ export default function Vehicle() {
       await userAPI.saveCar(editForm)
       toast.success('Vehicle updated!')
       setEditing(false)
-      userAPI.getMe().then(r => { setProfile(r.data); setCar(r.data?.car) })
+      userAPI.getCar().then(r => setCar(r.data))
     } catch (e:any) { toast.error(e.response?.data?.message || 'Failed to update') }
     finally { setSaving(false) }
   }
 
   const uploadCarPhoto = async (e: React.ChangeEvent<HTMLInputElement>, type:string) => {
     const f = e.target.files?.[0]; if (!f) return
-    try { await userAPI.uploadCarPhoto(f, type); toast.success('Photo uploaded!') }
+    try { await userAPI.uploadCarPhoto(f, type); toast.success('Photo uploaded!'); userAPI.getCar().then(r => setCar(r.data)) }
     catch { toast.error('Upload failed') }
   }
 
@@ -71,8 +72,8 @@ export default function Vehicle() {
 
         {/* Photo */}
         <div className="card" style={{textAlign:'center',padding:'28px 20px',marginBottom:12,cursor:'pointer'}} onClick={()=>photoRef.current?.click()}>
-          {car?.photoFront ? (
-            <img src={`http://localhost:5000${car.photoFront}`} alt="car" style={{width:'100%',maxHeight:160,objectFit:'cover',borderRadius:8}}/>
+          {(car?.carPhotoFront || car?.photoFront) ? (
+            <img src={(() => { const u = car.carPhotoFront || car.photoFront; return u.startsWith('http') ? u : `http://localhost:5000${u}` })()} alt="car" style={{width:'100%',maxHeight:160,objectFit:'cover',borderRadius:8}}/>
           ) : (
             <>
               <div style={{width:80,height:80,borderRadius:12,background:'var(--bg2)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 12px'}}>

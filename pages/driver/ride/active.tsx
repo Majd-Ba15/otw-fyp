@@ -271,13 +271,6 @@ export default function DriverActiveRide() {
               <span style={{ width: 18, height: 18, display: 'flex' }}>{I.check}</span>
               {completing ? 'Completing...' : 'Complete ride'}
             </button>
-
-            <button
-              className="btn btn-full"
-              onClick={() => router.push('/sos')}
-              style={{ height: 42, background: 'transparent', border: '1.5px solid var(--red)', color: 'var(--red)', borderRadius: 8, fontSize: 13, fontWeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <span style={{ width: 16, height: 16, display: 'flex' }}>{I.sos}</span> Emergency SOS
-            </button>
           </div>
         )}
       </div>
