@@ -44,8 +44,11 @@ export default function MultipleStops() {
 
   const selectRide = (ride: any) => {
     setSelectedRide(ride)
-    // Load existing stops from the ride
-    if (ride.stops) {
+    // Load existing stops — backend now returns RideStop objects; keep the old
+    // "name::lat::lng|..." string parse as a fallback for locally-saved data.
+    if (Array.isArray(ride.stops)) {
+      setStops(ride.stops.map((s: any) => ({ name: s.stopName, lat: Number(s.stopLat) || 0, lng: Number(s.stopLng) || 0 })).filter((s: Stop) => s.name))
+    } else if (ride.stops) {
       const existing = String(ride.stops).split('|').filter(Boolean).map((s: string) => {
         const parts = s.split('::')
         if (parts.length === 3) return { name: parts[0], lat: parseFloat(parts[1]), lng: parseFloat(parts[2]) }
@@ -71,16 +74,16 @@ export default function MultipleStops() {
     if (!selectedRide) return
     if (stops.length < 1) { toast.error('Add at least one stop'); return }
     setSaving(true)
-    // Store as "name::lat::lng" so we preserve coordinates
-    const encoded = stops.map(s => `${s.name}::${s.lat}::${s.lng}`).join('|')
     try {
-      await rideAPI.update(selectedRide.rideId, { stops: encoded })
+      // Send stops as proper StopDto objects (with coordinates) so the backend
+      // persists them in RideStops and they appear on rider search cards + maps.
+      await rideAPI.update(selectedRide.rideId, {
+        stops: stops.map((s, i) => ({ stopName: s.name, stopLat: s.lat || null, stopLng: s.lng || null, stopPrice: 0, stopOrder: i })),
+      })
       toast.success('Stops saved!')
       router.push(`/driver/ride/${selectedRide.rideId}`)
-    } catch {
-      // Save locally if API fails
-      toast.success('Stops saved locally!')
-      router.push(`/driver/ride/${selectedRide.rideId}`)
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Could not save stops — is the backend running?')
     } finally { setSaving(false) }
   }
 
@@ -120,7 +123,7 @@ export default function MultipleStops() {
                   </div>
                   <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 1 }}>
                     {new Date(r.departureTime).toLocaleDateString('en', { weekday:'short', day:'numeric', month:'short' })} ·{' '}
-                    {r.stops ? `${String(r.stops).split('|').filter(Boolean).length} stop(s)` : 'No stops yet'}
+                    {(() => { const n = Array.isArray(r.stops) ? r.stops.length : r.stops ? String(r.stops).split('|').filter(Boolean).length : 0; return n > 0 ? `${n} stop(s)` : 'No stops yet' })()}
                   </div>
                 </div>
                 <span style={{ width: 14, height: 14, color: 'var(--text3)', display: 'flex' }}>{I.back}</span>

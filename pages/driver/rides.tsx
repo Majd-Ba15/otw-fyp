@@ -80,6 +80,12 @@ export default function MyRides() {
                 {r.bookedSeats}/{r.totalSeats} booked
               </span>
             </div>
+            {Array.isArray(r.stops) && r.stops.length > 0 && (
+              <div style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'#A66A00',marginTop:6}}>
+                <span style={{width:12,height:12,display:'flex'}}>{I.pin}</span>
+                via {r.stops.map((s:any)=>s.stopName).filter(Boolean).join(' → ')}
+              </div>
+            )}
           </div>
         ))}
       </div>

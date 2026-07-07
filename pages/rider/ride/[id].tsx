@@ -191,7 +191,23 @@ export default function RideDetail() {
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{ride.fromLocation}</span>
             </div>
             {ride.fromNote && <div className="rsub">{ride.fromNote}</div>}
-            <div className="rconn" style={{ marginBottom: 3 }} />
+            {(() => {
+              // Stops: RideStop objects from the API, names array from search
+              // preview, or legacy '|'-string — render whichever shape arrives.
+              const names: string[] = Array.isArray(ride.stops)
+                ? [...ride.stops].sort((a: any, b: any) => (a?.stopOrder ?? 0) - (b?.stopOrder ?? 0)).map((s: any) => typeof s === 'string' ? s : s?.stopName).filter(Boolean)
+                : ride.stops ? String(ride.stops).split('|').filter(Boolean) : []
+              return names.length > 0 ? (
+                <div style={{ marginLeft: 4, borderLeft: '1.5px dashed var(--border2)', paddingLeft: 12, margin: '4px 0 4px 4px' }}>
+                  {names.map((n, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                      <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#F59E0B', flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: 'var(--text2)' }}>Stop {i + 1} · {n}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : <div className="rconn" style={{ marginBottom: 3 }} />
+            })()}
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
               <div className="rdot-r" />
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{ride.toLocation}</span>

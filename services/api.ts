@@ -83,6 +83,18 @@ export const rideAPI = {
   startRide:       (id: number)       => API.put(`/api/rides/${id}/start`),
   endRide:         (id: number)       => API.put(`/api/rides/${id}/end`),
 }
+export const demandAPI = {
+  createRequest:      (d: any)         => API.post('/api/demand/requests', d),
+  getMyRequests:      ()               => API.get('/api/demand/requests/mine'),
+  getOpenRequests:    ()               => API.get('/api/demand/requests/open'),
+  getMatches:         (id: number)     => API.get(`/api/demand/requests/${id}/matches`),
+  acceptRequest:      (id: number, d: any = {}) => API.put(`/api/demand/requests/${id}/accept`, d),
+  closeRequest:       (id: number)     => API.put(`/api/demand/requests/${id}/close`),
+  createAvailability: (d: any)         => API.post('/api/demand/availability', d),
+  getMyAvailability:  ()               => API.get('/api/demand/availability/mine'),
+  disableAvailability:(id: number)     => API.put(`/api/demand/availability/${id}/disable`),
+  getAnalytics:       ()               => API.get('/api/demand/admin/analytics'),
+}
 export const bookingAPI = {
   book:            (d: any)           => API.post('/api/bookings', d),
   getUpcoming:     ()                 => API.get('/api/bookings/upcoming'),
@@ -163,6 +175,6 @@ export const adminAPI = {
   getReports:     (status?: string)           => API.get('/api/admin/reports', { params: { status } }),
   getReport:      (id: number)                => API.get(`/api/admin/reports/${id}`),
   resolveReport:  (id: number, d: any)        => API.put(`/api/admin/reports/${id}/resolve`, d),
-  getAnalytics:   ()                          => API.get('/api/admin/analytics'),
+  getAnalytics:   (days?: number)             => API.get('/api/admin/analytics', { params: { days } }),
 }
 export default API

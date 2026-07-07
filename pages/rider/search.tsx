@@ -8,6 +8,10 @@ import { isRideActive } from '../../lib/rideStatus'
 const MapRides  = dynamic(() => import('../../components/shared/MapRides'),  { ssr: false })
 const MapPicker = dynamic(() => import('../../components/shared/MapPicker'), { ssr: false })
 
+// Stops arrive as an array of names from the API, or a '|'-joined string (demo data)
+const stopNames = (s: any): string[] =>
+  Array.isArray(s) ? s.filter(Boolean) : s ? String(s).split('|').filter(Boolean) : []
+
 export default function SearchRides() {
   const router = useRouter()
 
@@ -88,10 +92,7 @@ export default function SearchRides() {
         const fromLower = form.from.toLowerCase()
         const nearby = allRides
           .filter(ride => !results.find(ex => (ex.rideId || ex.id) === (ride.rideId || ride.id)))
-          .filter(ride => {
-            if (!ride.stops) return false
-            return String(ride.stops).split('|').some((s: string) => s.toLowerCase().includes(fromLower) || fromLower.includes(s.toLowerCase().trim()))
-          })
+          .filter(ride => stopNames(ride.stops).some((s: string) => s.toLowerCase().includes(fromLower) || fromLower.includes(s.toLowerCase().trim())))
           .map((ride: any) => ({ ...ride, _nearbyStop: true }))
         results = [...results, ...nearby]
       }
@@ -101,7 +102,7 @@ export default function SearchRides() {
         const fl = form.from.toLowerCase()
         const tl = form.to.toLowerCase()
         results = allRides.filter((r: any) => {
-          const fromMatch = !fl || r.fromLocation.toLowerCase().includes(fl) || (r.stops && String(r.stops).toLowerCase().includes(fl))
+          const fromMatch = !fl || r.fromLocation.toLowerCase().includes(fl) || stopNames(r.stops).join('|').toLowerCase().includes(fl)
           const toMatch   = !tl || r.toLocation.toLowerCase().includes(tl)
           return fromMatch && toMatch
         })
@@ -115,7 +116,7 @@ export default function SearchRides() {
       const fl = form.from.toLowerCase()
       const tl = form.to.toLowerCase()
       const filtered = allRides.filter((r: any) => {
-        const fromMatch = !fl || r.fromLocation.toLowerCase().includes(fl) || (r.stops && String(r.stops).toLowerCase().includes(fl))
+        const fromMatch = !fl || r.fromLocation.toLowerCase().includes(fl) || stopNames(r.stops).join('|').toLowerCase().includes(fl)
         const toMatch   = !tl || r.toLocation.toLowerCase().includes(tl)
         return fromMatch && toMatch
       }).filter(isRideActive)
@@ -319,7 +320,7 @@ export default function SearchRides() {
           sorted.map((r: any) => {
             const isAiBest   = (r.rideId || r.id) === bestId
             const isSelected = selectedRide && (selectedRide.rideId || selectedRide.id) === (r.rideId || r.id)
-            const stops: string[] = r.stops ? String(r.stops).split('|').filter(Boolean) : []
+            const stops: string[] = stopNames(r.stops)
             return (
               <div key={r.rideId || r.id}
                 className="card card-hover"

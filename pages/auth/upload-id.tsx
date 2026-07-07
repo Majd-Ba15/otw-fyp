@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Cookies from 'js-cookie'
 import { jwtDecode } from 'jwt-decode'
@@ -36,21 +36,19 @@ export default function UploadId() {
   const [loading, setLoading] = useState(false)
   const [done,    setDone]    = useState(false)
 
-  // Check driver role synchronously (like profile-setup does)
-  const isDriver = (() => {
+  // Resolve the driver role AFTER mount. Reading cookies/localStorage during
+  // render makes the server HTML ("Step 3 of 3") differ from the first client
+  // render ("Step 3 of 4") and throws a React hydration error.
+  const [isDriver, setIsDriver] = useState(false)
+  useEffect(() => {
     try {
       const d: any = jwtDecode(Cookies.get('otw_token') || '')
-      if (d.role === 'Driver') return true
-    } catch (e) {
-      // Token decode failed, check localStorage fallback
+      if (d.role === 'Driver') { setIsDriver(true); return }
+    } catch {
+      // Token missing/invalid — fall through to localStorage
     }
-    // Fallback: check localStorage (set during registration)
-    if (typeof window !== 'undefined') {
-      const storedRole = localStorage.getItem('otw_user_role')
-      return storedRole === 'Driver'
-    }
-    return false
-  })()
+    setIsDriver(localStorage.getItem('otw_user_role') === 'Driver')
+  }, [])
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]
@@ -124,10 +122,10 @@ export default function UploadId() {
         console.log('✅ Backend upload successful:', uploadRes.data)
       } catch (backendError: any) {
         // Backend save failed, so admin would not be able to review the ID.
+        console.error('❌ Backend upload failed:', backendError.response?.data || backendError.message)
         toast.error(backendError.response?.data?.message || 'Could not save ID photo to backend. Please try again.')
         setLoading(false)
         return
-        console.error('❌ Backend upload failed:', backendError.response?.data || backendError.message)
       }
 
       setDone(true)

@@ -13,7 +13,7 @@ interface Ride {
   fromLng?:       number
   toLat?:         number
   toLng?:         number
-  stops?:         string
+  stops?:         string | string[]   // array of names from API, '|'-string from demo data
   pricePerSeat:   number
   availableSeats: number
   departureTime:  string
@@ -227,14 +227,13 @@ export default function MapRides({ rides, selected, onSelect, height = 400 }: Pr
         const routePoints: [number, number][] = []
         if (from) routePoints.push(from)
 
-        // Stops
+        // Stops — accept both API shape (array of names) and demo shape ('|'-string)
         const stopPoints: { name: string; coords: [number, number] }[] = []
-        if (ride.stops) {
-          ride.stops.split('|').filter(Boolean).forEach(name => {
-            const sc = resolveCoords(name.trim())
-            if (sc) { routePoints.push(sc); stopPoints.push({ name: name.trim(), coords: sc }) }
-          })
-        }
+        const names = Array.isArray(ride.stops) ? ride.stops : ride.stops ? String(ride.stops).split('|') : []
+        names.filter(Boolean).forEach(name => {
+          const sc = resolveCoords(name.trim())
+          if (sc) { routePoints.push(sc); stopPoints.push({ name: name.trim(), coords: sc }) }
+        })
         if (to) routePoints.push(to)
 
         // Route line: prefer the OSRM road-following geometry; fall back to a

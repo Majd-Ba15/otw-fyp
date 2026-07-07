@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import toast from 'react-hot-toast'
 import { userAPI } from '../../services/api'
@@ -43,7 +43,12 @@ export default function ProfileSetup() {
   const [photo,   setPhoto]   = useState<File | null>(null)
   const [form,    setForm]    = useState({ studentId: '', faculty: '', phone: '', gender: '' })
 
-  const isDriver = (() => { try { const d:any = jwtDecode(Cookies.get('otw_token') || ''); return d.role === 'Driver' } catch { return false } })()
+  // Resolve role after mount — reading the cookie during render makes the
+  // server HTML differ from the client's first render (hydration error).
+  const [isDriver, setIsDriver] = useState(false)
+  useEffect(() => {
+    try { const d:any = jwtDecode(Cookies.get('otw_token') || ''); setIsDriver(d.role === 'Driver') } catch {}
+  }, [])
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return
