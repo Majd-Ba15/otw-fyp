@@ -81,7 +81,7 @@ export default function PostRide() {
                 <span style={{width:13,height:13,display:'flex'}}>{I.pin}</span> Pick
               </button>
             </div>
-            {showMapFrom && <div style={{marginTop:8}}><MapPicker label="" onPick={(lat,lng,name)=>{setForm(p=>({...p,fromLat:lat,fromLng:lng,from:name}));setShowMapFrom(false)}} height={160}/></div>}
+            {showMapFrom && <div style={{marginTop:8}}><MapPicker label="" onPick={(lat,lng,name)=>{setForm(p=>({...p,fromLat:lat,fromLng:lng,from:name}));setShowMapFrom(false)}} height={160} userUniversity={profile?.university}/></div>}
           </div>
           <div>
             <div style={{fontSize:12,color:'var(--text3)',marginBottom:4}}>Drop-off point *</div>
@@ -91,7 +91,7 @@ export default function PostRide() {
                 <span style={{width:13,height:13,display:'flex'}}>{I.pin}</span> Pick
               </button>
             </div>
-            {showMapTo && <div style={{marginTop:8}}><MapPicker label="" onPick={(lat,lng,name)=>{setForm(p=>({...p,toLat:lat,toLng:lng,to:name}));setShowMapTo(false)}} height={160}/></div>}
+            {showMapTo && <div style={{marginTop:8}}><MapPicker label="" onPick={(lat,lng,name)=>{setForm(p=>({...p,toLat:lat,toLng:lng,to:name}));setShowMapTo(false)}} height={160} userUniversity={profile?.university}/></div>}
           </div>
 
           {/* Route preview — appears once BOTH points are set. Draws the real

@@ -4,18 +4,20 @@ import { userAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/router'
 import Cookies from 'js-cookie'
+import UniversityBadge from '../../components/shared/UniversityBadge'
+import { findUniversity } from '../../lib/universities'
 
 export default function RiderProfile() {
   const router  = useRouter()
   const fileRef = useRef<HTMLInputElement>(null)
   const [profile, setProfile] = useState<any>(null)
   const [editing, setEditing] = useState(false)
-  const [form,    setForm]    = useState({ phone: '' })
+  const [form,    setForm]    = useState({ phone: '', campusName: '' })
   const [loading, setLoading] = useState(false)
   const [ridesTaken, setRidesTaken] = useState(0)
 
   useEffect(() => {
-    userAPI.getMe().then(r => { setProfile(r.data); setForm({ phone: r.data.phone || '' }) }).catch(() => {})
+    userAPI.getMe().then(r => { setProfile(r.data); setForm({ phone: r.data.phone || '', campusName: r.data.campusName || '' }) }).catch(() => {})
     userAPI.getStats().then(r => setRidesTaken(r.data?.completedRides || 0)).catch(() => {})
   }, [])
 
@@ -51,10 +53,16 @@ export default function RiderProfile() {
             <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={async e => { const f = e.target.files?.[0]; if (f) { try { await userAPI.uploadPhoto(f); toast.success('Photo updated!'); userAPI.getMe().then(r => setProfile(r.data)) } catch { toast.error('Upload failed') } } }} />
           </div>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{profile?.fullName}</div>
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 6 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
             <span className="badge badge-green">Rider</span>
             {profile?.isVerified && <span className="badge badge-green">Verified</span>}
+            <UniversityBadge code={profile?.university} campusName={profile?.campusName} />
           </div>
+          {findUniversity(profile?.university) && findUniversity(profile?.university)!.code !== 'OTHER' && (
+            <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>
+              {findUniversity(profile?.university)!.name}{profile?.campusName ? ` · ${profile.campusName}` : ''}
+            </div>
+          )}
           <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 6 }}>Member since {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en', { month: 'long', year: 'numeric' }) : '—'}</div>
         </div>
 
@@ -101,6 +109,22 @@ export default function RiderProfile() {
               {f.key === 'email' && <button style={{ background: 'none', border: 'none', cursor: 'pointer', width: 16, height: 16, display: 'flex', color: 'var(--green)' }}>{I.checkC}</button>}
             </div>
           ))}
+          {findUniversity(profile?.university) && findUniversity(profile?.university)!.campuses.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1 }}>
+                <span style={{ width: 15, height: 15, color: 'var(--text3)', display: 'flex' }}>{I.pin}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text3)' }}>Home campus</div>
+                  {editing
+                    ? <select className="input" style={{ height: 34, marginTop: 2, fontSize: 13 }} value={form.campusName} onChange={e => setForm(p => ({ ...p, campusName: e.target.value }))}>
+                        <option value="">Not set</option>
+                        {findUniversity(profile.university)!.campuses.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                      </select>
+                    : <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', marginTop: 1 }}>{profile?.campusName || '—'}</div>}
+                </div>
+              </div>
+            </div>
+          )}
           {editing && <button className="btn btn-primary btn-full" style={{ marginTop: 12 }} onClick={save} disabled={loading}>{loading ? 'Saving...' : 'Save changes'}</button>}
         </div>
 

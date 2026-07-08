@@ -4,6 +4,8 @@ import Layout, { I } from '../../components/layout/Layout'
 import { userAPI, notifAPI } from '../../services/api'
 import Cookies from 'js-cookie'
 import toast from 'react-hot-toast'
+import UniversityBadge from '../../components/shared/UniversityBadge'
+import { findUniversity } from '../../lib/universities'
 
 export default function DriverProfile() {
   const router  = useRouter()
@@ -76,11 +78,19 @@ export default function DriverProfile() {
             <span style={{fontSize:14,color:'rgba(255,255,255,0.9)'}}>{Number(stats?.averageRating || 0).toFixed(1)} rating</span>
           </div>
           {profile?.faculty && <div style={{fontSize:12,color:'rgba(255,255,255,0.65)',marginTop:4}}>{profile.faculty}</div>}
-          {profile?.isVerified && (
-            <span className="badge badge-green" style={{marginTop:8,display:'inline-flex'}}>
-              <span style={{width:12,height:12,display:'flex'}}>{I.checkC}</span> Verified Driver
-            </span>
+          {findUniversity(profile?.university) && findUniversity(profile?.university)!.code !== 'OTHER' && (
+            <div style={{fontSize:12,color:'rgba(255,255,255,0.65)',marginTop:2}}>
+              {findUniversity(profile?.university)!.name}{profile?.campusName ? ` · ${profile.campusName}` : ''}
+            </div>
           )}
+          <div style={{display:'flex',justifyContent:'center',gap:6,marginTop:8,flexWrap:'wrap'}}>
+            {profile?.isVerified && (
+              <span className="badge badge-green" style={{display:'inline-flex'}}>
+                <span style={{width:12,height:12,display:'flex'}}>{I.checkC}</span> Verified Driver
+              </span>
+            )}
+            <UniversityBadge code={profile?.university} campusName={profile?.campusName} />
+          </div>
         </div>
 
         {/* Stats */}

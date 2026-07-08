@@ -5,6 +5,7 @@ import Cookies from 'js-cookie'
 import toast from 'react-hot-toast'
 import { authAPI } from '../../services/api'
 import { I } from '../../components/layout/Layout'
+import { UNIVERSITIES, universityFromEmail, emailMatchesUniversity } from '../../lib/universities'
 
 // Larger, friendlier role icons for the "I want to join as" picker — the
 // shared nav icons (I.user/I.car) are tuned for 15-16px sidebar use and look
@@ -35,7 +36,8 @@ export default function Register() {
   const [resending, setResending] = useState(false)
   const [otp,     setOtp]     = useState('')
   const [showPw,  setShowPw]  = useState(false)
-  const [form, setForm] = useState({ fullName: '', email: '', password: '', confirm: '', role: 'Rider' })
+  const [form, setForm] = useState({ fullName: '', email: '', password: '', confirm: '', role: 'Rider', university: '' })
+  const [universityTouched, setUniversityTouched] = useState(false) // true once the user picks manually — stops auto-select from overriding their choice
 
   const pwStr = (p: string) => { let s = 0; if(p.length>=8)s++; if(/[A-Z]/.test(p))s++; if(/[0-9]/.test(p))s++; if(/[^A-Za-z0-9]/.test(p))s++; return s }
   const str = pwStr(form.password)
@@ -48,9 +50,15 @@ export default function Register() {
     if (!form.fullName || !form.email || !form.password) { toast.error('Fill all fields'); return }
     if (form.password !== form.confirm) { toast.error('Passwords do not match'); return }
     if (form.password.length < 8) { toast.error('Password must be at least 8 characters'); return }
+    if (!form.university) { toast.error('Select your university'); return }
+    // Client-side check is UX only — the server re-validates and is authoritative.
+    if (!emailMatchesUniversity(form.email, form.university)) {
+      toast.error('Your email domain does not match the selected university. Use your university email or select Other.')
+      return
+    }
     setLoading(true)
     try {
-      const res = await authAPI.register({ fullName: form.fullName, email: form.email, password: form.password, role: form.role })
+      const res = await authAPI.register({ fullName: form.fullName, email: form.email, password: form.password, role: form.role, university: form.university })
       if (res.data.token) Cookies.set('otw_token', res.data.token, { expires: 7 })
       // Store role in localStorage as fallback (in case token doesn't have role)
       localStorage.setItem('otw_user_role', form.role)
@@ -125,7 +133,35 @@ export default function Register() {
               </div>
               <div className="form-group">
                 <label className="form-label"><span style={{ width: 15, height: 15, display: 'flex' }}>{I.mail}</span>University email</label>
-                <input className="input" type="email" placeholder="yourname@student.utm.edu.my" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
+                <input className="input" type="email" placeholder="yourname@lau.edu" value={form.email} onChange={e => {
+                  const email = e.target.value
+                  setForm(p => {
+                    // Auto-select the matching university as the user types, unless
+                    // they've already picked one manually — never override their choice.
+                    if (universityTouched) return { ...p, email }
+                    const match = universityFromEmail(email)
+                    return match ? { ...p, email, university: match.code } : { ...p, email }
+                  })
+                }} />
+              </div>
+              <div className="form-group">
+                <label className="form-label"><span style={{ width: 15, height: 15, display: 'flex' }}>{I.id}</span>University</label>
+                <select className="input" value={form.university}
+                  onChange={e => { setUniversityTouched(true); setForm(p => ({ ...p, university: e.target.value })) }}>
+                  <option value="">Select your university</option>
+                  {UNIVERSITIES.map(u => <option key={u.code} value={u.code}>{u.name}</option>)}
+                </select>
+                {form.university && form.email && (
+                  emailMatchesUniversity(form.email, form.university) ? (
+                    <div style={{ fontSize: 11, color: 'var(--green)', marginTop: 4, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <span style={{ width: 12, height: 12, display: 'flex' }}>{I.check}</span> Matches your email domain
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 11, color: '#B45309', marginTop: 4 }}>
+                      ⚠ This email doesn't look like a {UNIVERSITIES.find(u => u.code === form.university)?.code} address — you can still submit, but pick "Other university" if this isn't your school email.
+                    </div>
+                  )
+                )}
               </div>
               <div className="form-group">
                 <label className="form-label"><span style={{ width: 15, height: 15, display: 'flex' }}>{I.lock}</span>Password</label>

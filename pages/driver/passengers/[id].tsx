@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Layout, { I } from '../../../components/layout/Layout'
 import { rideAPI, userAPI, notifAPI } from '../../../services/api'
+import UniversityBadge from '../../../components/shared/UniversityBadge'
 
 export default function PassengerList() {
   const router = useRouter()
@@ -33,6 +34,8 @@ export default function PassengerList() {
   const passengerName = (p: any) => riderOf(p).fullName || riderOf(p).FullName || p.fullName || p.FullName || 'Passenger'
   const passengerInitials = (p: any) => passengerName(p).split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
   const passengerNote = (p: any) => p.note || p.Note || p.pickupNote || p.pickupLocation || ''
+  const passengerUniversity = (p: any) => riderOf(p).university || riderOf(p).University
+  const passengerCampus = (p: any) => riderOf(p).campusName || riderOf(p).CampusName
   const chatHref = (p: any) => {
     const rider = riderOf(p)
     const userId = rider.userId || rider.UserId || p.riderId || p.userId
@@ -68,7 +71,10 @@ export default function PassengerList() {
               <div key={p.bookingId} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderBottom: i < passengers.length - 1 ? '1px solid var(--border)' : 'none' }}>
                 <div className="av">{passengerInitials(p)}</div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{passengerName(p)}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{passengerName(p)}</span>
+                    <UniversityBadge code={passengerUniversity(p)} campusName={passengerCampus(p)} />
+                  </div>
                   <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 1 }}>Note: {passengerNote(p) || 'No note added'}</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>

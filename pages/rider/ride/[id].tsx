@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import Layout, { I } from '../../../components/layout/Layout'
 import { rideAPI, userAPI } from '../../../services/api'
 import toast from 'react-hot-toast'
+import UniversityBadge from '../../../components/shared/UniversityBadge'
 
 const FAV_KEY       = 'otw_favourite_rides'
 const FAV_RIDES_KEY = 'otw_favourite_ride_details'
@@ -161,6 +162,7 @@ export default function RideDetail() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{ride.driver?.fullName}</span>
                 {ride.driver?.isVerified && <span className="badge badge-green" style={{ fontSize: 11 }}>Verified</span>}
+                <UniversityBadge code={ride.driver?.university} campusName={ride.driver?.campusName} />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, color: '#F59E0B', marginTop: 2 }}>
                 <span style={{ width: 13, height: 13, display: 'flex' }}>{I.starF}</span>

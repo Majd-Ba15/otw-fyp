@@ -5,6 +5,7 @@ import { userAPI } from '../../services/api'
 import { I } from '../../components/layout/Layout'
 import Cookies from 'js-cookie'
 import { jwtDecode } from 'jwt-decode'
+import { findUniversity } from '../../lib/universities'
 
 const FACULTIES = [
   'Faculty of Computing','Faculty of Civil Engineering','Faculty of Electrical Engineering',
@@ -41,14 +42,19 @@ export default function ProfileSetup() {
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState('')
   const [photo,   setPhoto]   = useState<File | null>(null)
-  const [form,    setForm]    = useState({ studentId: '', faculty: '', phone: '', gender: '' })
+  const [form,    setForm]    = useState({ studentId: '', faculty: '', phone: '', gender: '', campusName: '' })
 
   // Resolve role after mount — reading the cookie during render makes the
   // server HTML differ from the client's first render (hydration error).
   const [isDriver, setIsDriver] = useState(false)
+  // The university code was already stored at registration — fetched here
+  // just to know which campuses to offer, not editable on this page.
+  const [university, setUniversity] = useState<string | null>(null)
   useEffect(() => {
     try { const d:any = jwtDecode(Cookies.get('otw_token') || ''); setIsDriver(d.role === 'Driver') } catch {}
+    userAPI.getMe().then(r => setUniversity(r.data?.university || null)).catch(() => {})
   }, [])
+  const uni = findUniversity(university || undefined)
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return
@@ -83,7 +89,7 @@ export default function ProfileSetup() {
     //    profile page. OTP verification now issues a JWT, so this is
     //    authenticated; failure is non-fatal (localStorage keeps a copy).
     try {
-      await userAPI.updateMe({ studentId: form.studentId, faculty: form.faculty, phone: form.phone, gender: form.gender })
+      await userAPI.updateMe({ studentId: form.studentId, faculty: form.faculty, phone: form.phone, gender: form.gender, campusName: form.campusName || null })
     } catch {
       // offline/backend down — continue; data can be re-entered from Profile
     }
@@ -141,6 +147,20 @@ export default function ProfileSetup() {
               </select>
             </div>
           </div>
+
+          {uni && uni.campuses.length > 0 && (
+            <div className="form-group">
+              <label className="form-label">
+                <span style={{ width: 15, height: 15, display: 'flex' }}>{I.pin}</span>Home campus
+              </label>
+              <div className="select-wrap">
+                <select className="input" value={form.campusName} onChange={e => setForm(p => ({ ...p, campusName: e.target.value }))}>
+                  <option value="">Not set</option>
+                  {uni.campuses.map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                </select>
+              </div>
+            </div>
+          )}
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
             <div>

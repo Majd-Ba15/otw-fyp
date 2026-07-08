@@ -170,7 +170,7 @@ export default function SearchRides() {
             </div>
             {showFromMap && (
               <div style={{ marginTop: 8 }}>
-                <MapPicker label="Tap to set your pickup point" height={180}
+                <MapPicker label="Tap to set your pickup point" height={180} userUniversity={profile?.university}
                   onPick={(lat, lng, name) => { setForm(p => ({ ...p, from: name, fromLat: lat, fromLng: lng })); setShowFromMap(false) }} />
               </div>
             )}
@@ -194,7 +194,7 @@ export default function SearchRides() {
             </div>
             {showToMap && (
               <div style={{ marginTop: 8 }}>
-                <MapPicker label="Tap to set your destination" height={180}
+                <MapPicker label="Tap to set your destination" height={180} userUniversity={profile?.university}
                   onPick={(lat, lng, name) => { setForm(p => ({ ...p, to: name })); setShowToMap(false) }} />
               </div>
             )}
