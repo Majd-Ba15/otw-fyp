@@ -90,8 +90,8 @@ export function useDarkMode() {
 const RIDER_NAV = [
   { section: 'Rider' },
   { path:'/rider/dashboard',    icon:'dash',    label:'Dashboard' },
-  { path:'/rider/search',       icon:'search',  label:'Search rides' },
-  { path:'/rider/request',      icon:'send',    label:'Request ride' },
+  { path:'/rider/search',       icon:'search',  label:'Search trips' },
+  { path:'/rider/request',      icon:'send',    label:'Request a trip' },
   { path:'/rider/ride/active',  icon:'wifi',    label:'Active ride' },
   { section: 'My trips' },
   { path:'/rider/history',      icon:'history', label:'History' },

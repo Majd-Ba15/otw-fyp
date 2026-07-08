@@ -139,11 +139,13 @@ export default function PostRide() {
           <div style={{fontSize:14,fontWeight:600,color:'var(--text)',marginBottom:12}}>Seats & price</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12}}>
             <div>
-              <div style={{fontSize:12,color:'var(--text3)',marginBottom:4}}>Seats</div>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:24,marginBottom:4}}>
+                <div style={{fontSize:12,color:'var(--text3)'}}>Seats</div>
+              </div>
               <input className="input" type="number" min={1} max={8} value={form.seats} onChange={e=>setForm(p=>({...p,seats:parseInt(e.target.value)}))}/>
             </div>
             <div>
-              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:4}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:24,marginBottom:4}}>
                 <div style={{fontSize:12,color:'var(--text3)'}}>Price ($)</div>
                 <button className="btn btn-secondary btn-sm" style={{fontSize:11,padding:'4px 7px'}} onClick={()=>runDriverAi('price')} disabled={aiLoading==='price'}>
                   {aiLoading==='price'?'Thinking...':'AI price'}

@@ -31,67 +31,24 @@ export default function Welcome() {
 
   return (
     <main className="welcome">
-      <section className="hero">
-        <div className="hero-photo" aria-hidden="true">
-          <img src="/otw-bg.png" alt="" />
-        </div>
-
-        <div className="hero-shade" aria-hidden="true" />
-        <div className="hero-bottom" aria-hidden="true" />
-
-        <Link
-          href="/"
-          className="brand"
-          aria-label="OTW home"
-          style={{
-            position: 'fixed',
-            top: 14,
-            left: 18,
-            zIndex: 9999,
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 18,
-            padding: '6px 14px 6px 6px',
-            borderRadius: 12,
-            background: 'rgba(0, 0, 0, 0.62)',
-            backdropFilter: 'blur(10px)',
-            color: '#fff',
-            textDecoration: 'none',
-            textShadow: '0 3px 16px rgba(0, 0, 0, 0.75)',
-          }}
-        >
-          <span
-            className="brand-mark"
-            style={{
-              width: 62,
-              height: 62,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flex: '0 0 auto',
-              padding: 6,
-              borderRadius: 8,
-              background: '#fff',
-              boxShadow: '0 10px 26px rgba(0, 0, 0, 0.22)',
-            }}
-          >
-            <img src="/otw.png" alt="OTW" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+      <header style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', padding: '14px 32px', background: '#fff', borderBottom: '1px solid #e5e7eb' }}>
+        <Link href="/" aria-label="OTW home" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', gap: 14, textDecoration: 'none', color: '#111827' }}>
+          <span style={{ width: 72, height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 8, borderRadius: 14, background: '#fff', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+            <img src="/otw.png" alt="OTW" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
           </span>
-          <span className="brand-copy">
-            <strong style={{ fontSize: 38, fontWeight: 900, letterSpacing: 0 }}>OTW</strong>
-            <span style={{ fontSize: 16, fontWeight: 700, letterSpacing: 3, color: 'rgba(255, 255, 255, 0.76)' }}>
-              On The Way
-            </span>
+          <span style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', lineHeight: 1.15, whiteSpace: 'nowrap' }}>
+            <strong style={{ fontSize: 32, fontWeight: 800, letterSpacing: 0.5 }}>OTW</strong>
+            <span style={{ fontSize: 14, fontWeight: 600, letterSpacing: 2, color: '#6b7280', textTransform: 'uppercase' }}>On The Way</span>
           </span>
         </Link>
+      </header>
 
+      <section className="hero">
         <div className="hero-content">
           <h1>
             Safe University
             <br />
-            Carpooling
-            <br />
-            <span>for Students</span>
+            Carpooling <span>for Students</span>
           </h1>
 
           <p>
@@ -100,51 +57,11 @@ export default function Welcome() {
           </p>
 
           <div className="actions">
-            <Link
-              href="/auth/register"
-              className="btn btn-primary"
-              style={{
-                width: 285,
-                height: 92,
-                padding: '0 38px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 10,
-                borderRadius: 8,
-                background: '#14b978',
-                color: '#fff',
-                fontSize: 22,
-                fontWeight: 800,
-                textDecoration: 'none',
-                whiteSpace: 'nowrap',
-                boxShadow: '0 16px 36px rgba(20, 185, 120, 0.28)',
-              }}
-            >
-              Get started <span aria-hidden="true">-&gt;</span>
+            <Link href="/auth/register" className="btn btn-primary">
+              Sign up
             </Link>
-            <Link
-              href="/auth/login"
-              className="btn btn-secondary"
-              style={{
-                width: 390,
-                height: 92,
-                padding: '0 38px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 8,
-                border: '1px solid rgba(255, 255, 255, 0.24)',
-                background: 'rgba(2, 8, 10, 0.5)',
-                backdropFilter: 'blur(10px)',
-                color: 'rgba(255, 255, 255, 0.9)',
-                fontSize: 22,
-                fontWeight: 800,
-                textDecoration: 'none',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              I already have an account
+            <Link href="/auth/login" className="btn btn-secondary">
+              Login
             </Link>
           </div>
 
@@ -158,386 +75,199 @@ export default function Welcome() {
           </div>
         </div>
 
-        <div className="wave" aria-hidden="true" />
+        <div className="hero-visual" aria-hidden="true">
+          <img src="/otw-bg.png" alt="" />
+        </div>
       </section>
 
       <style jsx>{`
         .welcome {
           width: 100%;
           min-height: 100vh;
-          overflow: hidden;
-          background: #02080a;
-          color: #fff;
+          background: var(--bg, #f4f5f7);
+          color: var(--text, #111827);
           font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
 
         .hero {
-          position: relative;
-          min-height: 100vh;
-          overflow: hidden;
-          background: #02080a;
-          isolation: isolate;
-        }
-
-        .hero-photo {
-          position: absolute;
-          inset: 0 0 0 auto;
-          width: 70%;
-          min-width: 760px;
-          z-index: 0;
-        }
-
-        .hero-photo::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          z-index: 1;
-          background: linear-gradient(
-            90deg,
-            #02080a 0%,
-            rgba(2, 8, 10, 0.75) 4%,
-            rgba(2, 8, 10, 0.38) 16%,
-            rgba(2, 8, 10, 0.08) 30%,
-            rgba(2, 8, 10, 0) 48%
-          );
-          pointer-events: none;
-        }
-
-        .hero-photo img {
-          width: 100%;
-          height: 100%;
-          display: block;
-          object-fit: cover;
-          object-position: center center;
-        }
-
-        .hero-shade {
-          position: absolute;
-          inset: 0 auto 0 0;
-          width: min(47vw, 680px);
-          z-index: 1;
-          background: linear-gradient(
-            90deg,
-            #02080a 0%,
-            rgba(2, 8, 10, 0.99) 62%,
-            rgba(2, 8, 10, 0.86) 78%,
-            rgba(2, 8, 10, 0) 100%
-          );
-          pointer-events: none;
-        }
-
-        .hero-bottom {
-          position: absolute;
-          inset: 0;
-          z-index: 2;
-          background: linear-gradient(
-            180deg,
-            rgba(0, 0, 0, 0.10) 0%,
-            rgba(0, 0, 0, 0) 32%,
-            rgba(0, 0, 0, 0.15) 100%
-          );
-          pointer-events: none;
-        }
-
-        .brand {
-          position: fixed;
-          top: 14px;
-          left: 18px;
-          z-index: 9999;
-          display: inline-flex;
-          align-items: center;
-          gap: 18px;
-          color: #fff;
-          text-decoration: none;
-          padding: 6px 14px 6px 6px;
-          border-radius: 12px;
-          background: rgba(0, 0, 0, 0.48);
-          backdrop-filter: blur(10px);
-          text-shadow: 0 3px 16px rgba(0, 0, 0, 0.75);
-        }
-
-        .brand-mark {
-          width: 62px;
-          height: 62px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          flex: 0 0 auto;
-          padding: 6px;
-          border-radius: 8px;
-          background: #fff;
-          box-shadow: 0 10px 26px rgba(0, 0, 0, 0.22);
-        }
-
-        .brand-mark img {
-          width: 100%;
-          height: 100%;
-          object-fit: contain;
-        }
-
-        .brand-copy {
           display: grid;
-          gap: 2px;
-          line-height: 1;
-          text-transform: uppercase;
-        }
-
-        .brand-copy strong {
-          font-size: 38px;
-          font-weight: 900;
-          letter-spacing: 0;
-        }
-
-        .brand-copy span {
-          font-size: 16px;
-          font-weight: 700;
-          letter-spacing: 3px;
-          color: rgba(255, 255, 255, 0.76);
+          grid-template-columns: minmax(0, 1fr) minmax(0, 0.85fr);
+          align-items: center;
+          gap: 48px;
+          max-width: 1240px;
+          margin: 0 auto;
+          padding: clamp(48px, 8vh, 96px) 32px;
         }
 
         .hero-content {
-          position: relative;
-          z-index: 4;
-          width: min(52vw, 680px);
-          margin-left: 18px;
-          padding-top: clamp(96px, 14vh, 132px);
+          min-width: 0;
         }
 
         h1 {
-          margin: 0 0 20px;
-          color: #fff;
-          font-size: clamp(46px, 4.4vw, 66px);
-          font-weight: 900;
-          line-height: 1.04;
-          letter-spacing: 0;
-          white-space: nowrap;
-          text-rendering: optimizeLegibility;
-          -webkit-font-smoothing: antialiased;
+          margin: 0 0 18px;
+          color: var(--text, #111827);
+          font-size: clamp(34px, 3.6vw, 48px);
+          font-weight: 800;
+          line-height: 1.15;
+          letter-spacing: -0.5px;
         }
 
         h1 span {
-          color: #14b978;
+          color: var(--green, #1aab6d);
         }
 
         p {
           max-width: 460px;
           margin: 0 0 28px;
-          color: rgba(255, 255, 255, 0.72);
-          font-size: clamp(17px, 1.4vw, 22px);
-          font-weight: 600;
-          line-height: 1.35;
+          color: var(--text3, #6b7280);
+          font-size: clamp(15px, 1.1vw, 17px);
+          font-weight: 500;
+          line-height: 1.55;
         }
 
         .actions {
           display: flex;
           align-items: center;
-          gap: 24px;
-          margin-bottom: 26px;
+          gap: 14px;
+          margin-bottom: 32px;
+          flex-wrap: wrap;
         }
 
         .btn {
-          height: 92px;
-          padding: 0 38px;
+          height: 52px;
+          padding: 0 26px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
+          gap: 8px;
           border-radius: 8px;
-          font-size: 22px;
-          font-weight: 800;
+          font-size: 15px;
+          font-weight: 700;
           text-decoration: none;
-          transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease,
-            box-shadow 0.2s ease;
           white-space: nowrap;
+          transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, border-color 0.15s ease;
         }
 
         .btn:hover {
-          transform: translateY(-2px);
+          transform: translateY(-1px);
         }
 
         .btn-primary {
-          width: 285px;
-          gap: 10px;
-          background: #14b978;
+          background: var(--green, #1aab6d);
           color: #fff;
-          box-shadow: 0 16px 36px rgba(20, 185, 120, 0.28);
+          box-shadow: 0 8px 20px rgba(26, 171, 109, 0.28);
         }
 
         .btn-primary:hover {
-          background: #10a86c;
-          box-shadow: 0 18px 42px rgba(20, 185, 120, 0.34);
+          background: var(--green-d, #13895a);
+          box-shadow: 0 10px 24px rgba(26, 171, 109, 0.34);
         }
 
         .btn-secondary {
-          width: 390px;
-          color: rgba(255, 255, 255, 0.82);
-          border: 1px solid rgba(255, 255, 255, 0.24);
-          background: rgba(2, 8, 10, 0.5);
-          backdrop-filter: blur(10px);
+          background: var(--bg-card, #fff);
+          color: var(--text, #111827);
+          border: 1.5px solid var(--border2, #d1d5db);
         }
 
         .btn-secondary:hover {
-          border-color: rgba(255, 255, 255, 0.42);
-          background: rgba(2, 8, 10, 0.66);
+          border-color: var(--green, #1aab6d);
+          color: var(--green, #1aab6d);
         }
 
         .feature-bar {
-          width: min(39vw, 545px);
-          min-height: 78px;
+          max-width: 480px;
           display: grid;
-          grid-template-columns: repeat(4, minmax(0, 1fr));
-          align-items: center;
-          gap: 12px;
-          padding: 16px;
-          border: 1px solid rgba(255, 255, 255, 0.16);
-          border-radius: 8px;
-          background: rgba(2, 8, 10, 0.56);
-          backdrop-filter: blur(14px);
-          box-shadow: 0 18px 46px rgba(0, 0, 0, 0.24);
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px 20px;
+          padding: 18px 20px;
+          border: 1px solid var(--border, #e5e7eb);
+          border-radius: var(--radius-lg, 12px);
+          background: var(--bg-card, #fff);
+          box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
         }
 
         .feature {
           min-width: 0;
           display: grid;
-          grid-template-columns: 34px minmax(0, 1fr);
+          grid-template-columns: 30px minmax(0, 1fr);
           align-items: center;
           gap: 10px;
-          color: rgba(255, 255, 255, 0.86);
+          color: var(--text2, #374151);
           font-size: 13px;
-          font-weight: 800;
+          font-weight: 600;
           line-height: 1.2;
         }
 
         .feature-icon {
-          width: 34px;
-          height: 34px;
+          width: 30px;
+          height: 30px;
           display: inline-flex;
           align-items: center;
           justify-content: center;
           border-radius: 999px;
-          background: #14b978;
-          color: #fff;
-          box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.1);
+          background: var(--green-l, #e8f8f1);
+          color: var(--green, #1aab6d);
         }
 
         .feature-icon :global(svg) {
-          width: 18px;
-          height: 18px;
+          width: 16px;
+          height: 16px;
         }
 
-        .wave {
-          position: absolute;
-          left: -42px;
-          bottom: -46px;
-          z-index: 3;
-          width: 620px;
-          height: 190px;
-          opacity: 0.32;
-          pointer-events: none;
-          background:
-            radial-gradient(ellipse at 48% 100%, rgba(20, 185, 120, 0.42), transparent 62%),
-            repeating-linear-gradient(
-              8deg,
-              rgba(20, 185, 120, 0.26) 0,
-              rgba(20, 185, 120, 0.26) 1px,
-              transparent 1px,
-              transparent 14px
-            );
-          transform: skewY(-8deg);
+        .hero-visual {
+          display: flex;
+          align-items: center;
+          justify-content: center;
         }
 
-        @media (max-width: 1180px) {
-          .hero-photo {
-            width: 76%;
-            min-width: 660px;
-          }
-
-          .hero-content {
-            width: min(50vw, 520px);
-          }
-
-          .feature-bar {
-            width: min(50vw, 545px);
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-          }
+        .hero-visual img {
+          /* No boxed frame, no forced aspect-ratio (that caused the empty
+             letterboxed padding) — the photo just sits at its own natural
+             proportions, capped so it never dominates the layout. */
+          width: 100%;
+          height: auto;
+          max-height: 480px;
+          display: block;
+          object-fit: contain;
+          border-radius: var(--radius-xl, 16px);
         }
 
-        @media (max-width: 820px) {
+        @media (max-width: 980px) {
           .hero {
-            min-height: auto;
-            padding-bottom: 30px;
+            grid-template-columns: 1fr;
+            gap: 32px;
+            padding: 32px 24px 48px;
           }
 
-          .hero-photo {
-            position: relative;
-            width: 100%;
-            min-width: 0;
-            height: 46vh;
-            min-height: 310px;
-            margin-left: 0;
+          .hero-visual {
+            order: -1;
           }
 
-          .hero-photo::before {
-            background: linear-gradient(
-              180deg,
-              rgba(2, 8, 10, 0) 0%,
-              rgba(2, 8, 10, 0.1) 58%,
-              #02080a 100%
-            );
+          .hero-visual img {
+            max-height: 300px;
           }
 
-          .hero-shade {
-            display: none;
-          }
-
-          .brand {
-            top: 10px;
-            left: 14px;
-          }
-
-          .hero-content {
-            width: auto;
-            margin: -46px 18px 0;
-            padding-top: 0;
-          }
-
-          h1 {
-            font-size: clamp(42px, 12vw, 58px);
-          }
-
-          p {
+          .hero-content p {
             max-width: 560px;
           }
 
+          .feature-bar {
+            max-width: 560px;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .hero {
+            padding: 24px 16px 40px;
+          }
+
           .actions {
-            flex-wrap: wrap;
-            gap: 14px;
+            flex-direction: column;
+            align-items: stretch;
           }
 
           .btn {
             width: 100%;
-            max-width: 390px;
-            height: 72px;
-          }
-
-          .feature-bar {
-            width: 100%;
-            max-width: 560px;
-          }
-        }
-
-        @media (max-width: 520px) {
-          .brand-copy strong {
-            font-size: 28px;
-          }
-
-          .brand-copy span {
-            font-size: 12px;
-            letter-spacing: 2.4px;
-          }
-
-          .hero-photo {
-            height: 42vh;
-            min-height: 270px;
           }
 
           .feature-bar {

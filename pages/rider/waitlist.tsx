@@ -65,7 +65,7 @@ export default function Waitlist() {
     setShowForm(false)
     setForm({ from: '', to: '', date: '', seats: 1 })
     setSaving(false)
-    toast.success('Added to waitlist! We\'ll notify you when a ride matches.')
+    toast.success('Added to waitlist! We\'ll notify you when a trip matches.')
   }
 
   const remove = (id: string) => {
@@ -93,8 +93,8 @@ export default function Waitlist() {
         <div className="notice notice-blue" style={{ marginBottom: 16 }}>
           <span style={{ width: 16, height: 16, display: 'flex', flexShrink: 0 }}>{I.bell}</span>
           <div>
-            <div style={{ fontWeight: 600 }}>Can't find a ride?</div>
-            <div style={{ fontSize: 12, marginTop: 2 }}>Add your trip to the waitlist and get notified when a matching ride becomes available.</div>
+            <div style={{ fontWeight: 600 }}>Can't find a trip?</div>
+            <div style={{ fontSize: 12, marginTop: 2 }}>Add your trip to the waitlist and get notified when a matching trip becomes available.</div>
           </div>
         </div>
 
@@ -153,7 +153,7 @@ export default function Waitlist() {
           <div className="card" style={{ textAlign: 'center', padding: '36px' }}>
             <span style={{ width: 36, height: 36, display: 'flex', margin: '0 auto 10px', color: 'var(--text4)', opacity: .4 }}>{I.clock}</span>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>No waitlist entries yet</div>
-            <div style={{ fontSize: 13, color: 'var(--text3)' }}>Add a trip above to be notified when a ride becomes available</div>
+            <div style={{ fontSize: 13, color: 'var(--text3)' }}>Add a trip above to be notified when a matching trip becomes available</div>
           </div>
         ) : items.map(item => (
           <div key={item.id} className="card" style={{ marginBottom: 10 }}>
@@ -189,7 +189,7 @@ export default function Waitlist() {
               <span style={{ fontSize: 11, color: 'var(--text4)' }}>Added {fmtAgo(item.addedAt)}</span>
               <button className="btn btn-primary btn-sm"
                 onClick={() => router.push(`/rider/search?from=${encodeURIComponent(item.fromLocation)}&to=${encodeURIComponent(item.toLocation)}`)}>
-                Search rides
+                Search trips
               </button>
             </div>
           </div>

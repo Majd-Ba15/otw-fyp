@@ -92,7 +92,7 @@ export default function ConfirmBooking() {
             <div className="card">
               <div style={{fontSize:14,fontWeight:600,color:'var(--text)',marginBottom:12}}>Price summary</div>
               <div style={{display:'flex',justifyContent:'space-between',fontSize:13,color:'var(--text2)',marginBottom:8}}>
-                <span>Ride fare ({seats} seat × ${ride.pricePerSeat})</span>
+                <span>Trip fare ({seats} seat × ${ride.pricePerSeat})</span>
                 <span>${ride.pricePerSeat*seats}</span>
               </div>
               <div style={{display:'flex',justifyContent:'space-between',fontSize:14,fontWeight:700,color:'var(--text)',borderTop:'1px solid var(--border)',paddingTop:10}}>

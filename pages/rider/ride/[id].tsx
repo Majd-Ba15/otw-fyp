@@ -299,7 +299,7 @@ export default function RideDetail() {
           </div>
         ) : (
           <button className="btn btn-primary btn-full btn-lg" onClick={book} style={{ marginTop: 8 }}>
-            Book this ride · ${ride.pricePerSeat}
+            Book this trip · ${ride.pricePerSeat}
           </button>
         )}
       </div>

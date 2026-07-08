@@ -62,12 +62,12 @@ export default function RiderRequestRide() {
   const initials = profile?.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'RD'
 
   return (
-    <Layout title="Request ride" role="Rider" userInitials={initials} userName={profile?.fullName}>
+    <Layout title="Request a trip" role="Rider" userInitials={initials} userName={profile?.fullName}>
       <div className="page-inner">
         <div className="card" style={{ marginBottom: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
             <span style={{ width: 18, height: 18, color: 'var(--green)', display: 'flex' }}>{I.send}</span>
-            <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Create ride request</h1>
+            <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Create trip request</h1>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -75,7 +75,7 @@ export default function RiderRequestRide() {
             <input className="input" placeholder="To" value={form.toLocation} onChange={e => setForm((p: any) => ({ ...p, toLocation: e.target.value }))} />
           </div>
           <div style={{ marginBottom: 10 }}>
-            <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>When do you need the ride? *</div>
+            <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>When do you need the trip? *</div>
             <input className="input" type="datetime-local" value={form.desiredTime} onChange={e => setForm((p: any) => ({ ...p, desiredTime: e.target.value }))} />
             <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
               Drivers available within ±30 minutes of this time will be matched automatically.
@@ -93,7 +93,7 @@ export default function RiderRequestRide() {
           <textarea className="input" style={{ minHeight: 72, marginBottom: 12 }} placeholder="Note for drivers" value={form.note} onChange={e => setForm((p: any) => ({ ...p, note: e.target.value }))} />
           <button className="btn btn-primary btn-lg" onClick={submit} disabled={saving}>
             <span style={{ width: 16, height: 16, display: 'flex' }}>{I.send}</span>
-            {saving ? 'Saving...' : 'Request ride'}
+            {saving ? 'Saving...' : 'Request trip'}
           </button>
         </div>
 
@@ -101,7 +101,7 @@ export default function RiderRequestRide() {
         {loading ? (
           <div className="card" style={{ textAlign: 'center', color: 'var(--text3)' }}>Loading...</div>
         ) : requests.length === 0 ? (
-          <div className="card" style={{ textAlign: 'center', color: 'var(--text3)' }}>No ride requests yet</div>
+          <div className="card" style={{ textAlign: 'center', color: 'var(--text3)' }}>No trip requests yet</div>
         ) : requests.map((r: any) => (
           <div key={r.rideRequestId} className="card" style={{ marginBottom: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, marginBottom: 8 }}>

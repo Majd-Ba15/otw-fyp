@@ -75,7 +75,7 @@ export default function RiderDashboard() {
               <span style={{width:18,height:18,color:'var(--green)',display:'flex'}}>{I.search}</span>
             </div>
             <div style={{flex:1}}>
-              <div style={{fontSize:14,fontWeight:500,color:'var(--text)'}}>Search for a ride</div>
+              <div style={{fontSize:14,fontWeight:500,color:'var(--text)'}}>Search for a trip</div>
               <div style={{fontSize:12,color:'var(--text3)',marginTop:1}}>Where do you want to go?</div>
             </div>
             <span style={{width:16,height:16,color:'var(--text3)',display:'flex',transform:'rotate(180deg)'}}>{I.back}</span>
@@ -99,9 +99,11 @@ export default function RiderDashboard() {
           ))}
         </div>
 
-        {/* Upcoming rides */}
+        {/* Upcoming — Pending bookings are still just a "trip" being requested;
+            once the driver confirms, the badge + wording become "Ride" (History
+            already reflects this for the full detail view). */}
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
-          <h2 style={{fontSize:16,fontWeight:600,color:'var(--text)'}}>Upcoming rides</h2>
+          <h2 style={{fontSize:16,fontWeight:600,color:'var(--text)'}}>Upcoming</h2>
           <Link href="/rider/history" style={{fontSize:13,color:'var(--green)',fontWeight:500}}>View all</Link>
         </div>
         {loading ? (
@@ -109,8 +111,8 @@ export default function RiderDashboard() {
         ) : bookings.length === 0 ? (
           <div className="card" style={{textAlign:'center',padding:'28px'}}>
             <span style={{width:36,height:36,display:'flex',margin:'0 auto 10px',color:'var(--text4)',opacity:.4}}>{I.car}</span>
-            <div style={{fontSize:14,color:'var(--text3)'}}>No upcoming rides</div>
-            <Link href="/rider/search"><button className="btn btn-primary btn-sm" style={{marginTop:12}}>Find a ride</button></Link>
+            <div style={{fontSize:14,color:'var(--text3)'}}>No upcoming trips</div>
+            <Link href="/rider/search"><button className="btn btn-primary btn-sm" style={{marginTop:12}}>Find a trip</button></Link>
           </div>
         ) : bookings.map((b:any) => (
           <div key={b.bookingId} className="card card-hover" style={{marginBottom:10,cursor:'pointer'}} onClick={()=>router.push(`/rider/ride/${b.ride?.rideId||1}`)}>
@@ -120,7 +122,7 @@ export default function RiderDashboard() {
                 <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{b.driver?.fullName}</div>
                 <div style={{fontSize:11,color:'var(--text3)'}}>{fmtTime(b.ride?.departureTime)}</div>
               </div>
-              <span className={`badge ${b.status==='Confirmed'?'badge-green':'badge-amber'}`}>{b.status}</span>
+              <span className={`badge ${b.status==='Confirmed'?'badge-green':'badge-amber'}`}>{b.status==='Confirmed'?'Ride confirmed':'Trip pending'}</span>
             </div>
             <div style={{display:'flex',alignItems:'center',gap:6,fontSize:12,color:'var(--text3)',marginBottom:6}}>
               <span style={{width:12,height:12,display:'flex'}}>{I.pin}</span>

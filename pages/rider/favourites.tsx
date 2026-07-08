@@ -64,14 +64,14 @@ export default function Favourites() {
   return (
     <Layout title="Favourites" role="Rider" userInitials={initials} unreadCount={unread}>
       <div className="page-inner">
-        {/* Favourite rides */}
-        <div style={{fontSize:15,fontWeight:600,color:'var(--text)',marginBottom:12}}>Favourite rides</div>
+        {/* Favourite trips */}
+        <div style={{fontSize:15,fontWeight:600,color:'var(--text)',marginBottom:12}}>Favourite trips</div>
         {loading ? (
           <div style={{textAlign:'center',padding:'24px',color:'var(--text3)',fontSize:13}}>Loading...</div>
         ) : rides.length === 0 ? (
           <div className="card" style={{textAlign:'center',padding:'28px',marginBottom:16}}>
             <span style={{width:36,height:36,display:'flex',margin:'0 auto 10px',color:'var(--text4)',opacity:.4}}>{I.heart}</span>
-            <div style={{fontSize:14,color:'var(--text3)'}}>No favourite rides yet</div>
+            <div style={{fontSize:14,color:'var(--text3)'}}>No favourite trips yet</div>
           </div>
         ) : rides.map(r => {
           const rideId = Number(r.rideId || r.id)
@@ -85,7 +85,7 @@ export default function Favourites() {
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:13,fontWeight:600,color:'var(--text)',marginBottom:2}}>{r.driver?.fullName || 'Driver'}</div>
                   <div style={{fontSize:12,color:'var(--text3)'}}>
-                    {r.departureTime ? new Date(r.departureTime).toLocaleString('en', {weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : 'Saved ride'}
+                    {r.departureTime ? new Date(r.departureTime).toLocaleString('en', {weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : 'Saved trip'}
                   </div>
                 </div>
                 <button onClick={e=>{ e.stopPropagation(); removeRideFav(rideId) }} style={{background:'none',border:'none',cursor:'pointer',color:'var(--red)',width:18,height:18,display:'flex'}}>{I.trash}</button>
@@ -132,7 +132,7 @@ export default function Favourites() {
               {(d.routes||[]).map((r:string)=><span key={r} style={{background:'var(--bg2)',padding:'3px 10px',borderRadius:20,fontSize:11,color:'var(--text3)'}}>{r}</span>)}
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-              <button className="btn btn-secondary btn-full btn-sm" style={{height:36}} onClick={()=>router.push('/rider/search')}>View rides</button>
+              <button className="btn btn-secondary btn-full btn-sm" style={{height:36}} onClick={()=>router.push('/rider/search')}>View trips</button>
               <button className="btn btn-primary btn-full btn-sm" style={{height:36}} onClick={()=>router.push(`/chat/${d.id}`)}>Message</button>
             </div>
           </div>

@@ -147,7 +147,7 @@ export default function SearchRides() {
   const fmtTime  = (iso: string) => new Date(iso).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })
 
   return (
-    <Layout title="Search rides" role="Rider" userInitials={initials} userName={profile?.fullName}>
+    <Layout title="Search trips" role="Rider" userInitials={initials} userName={profile?.fullName}>
       <div className="page-inner" style={{ paddingBottom: 32 }}>
 
         {/* ── Search form ── */}
@@ -218,7 +218,7 @@ export default function SearchRides() {
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn btn-primary btn-full btn-lg" style={{ flex: 1 }} onClick={search} disabled={searching}>
               <span style={{ width: 16, height: 16, display: 'flex' }}>{I.search}</span>
-              {searching ? 'Searching...' : 'Search rides'}
+              {searching ? 'Searching...' : 'Search trips'}
             </button>
             {searched && (
               <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }} onClick={clearSearch}>
@@ -256,7 +256,7 @@ export default function SearchRides() {
             <span style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
               <span style={{ padding: '1px 5px', background: '#2563EB', borderRadius: 3, color: 'white', fontSize: 10, fontWeight: 700 }}>$</span> Destination / price
             </span>
-            <span style={{ marginLeft: 'auto' }}>Each colour = one ride · tap a pin for details</span>
+            <span style={{ marginLeft: 'auto' }}>Each colour = one trip · tap a pin for details</span>
           </div>
         </div>
 
@@ -264,8 +264,8 @@ export default function SearchRides() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <span style={{ fontSize: 13, color: 'var(--text3)' }}>
             {searched
-              ? `${sorted.length} ride${sorted.length !== 1 ? 's' : ''} found`
-              : `${sorted.length} ride${sorted.length !== 1 ? 's' : ''} available`}
+              ? `${sorted.length} trip${sorted.length !== 1 ? 's' : ''} found`
+              : `${sorted.length} trip${sorted.length !== 1 ? 's' : ''} available`}
           </span>
           <div style={{ position: 'relative' }}>
             <button className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 4 }}
@@ -310,7 +310,7 @@ export default function SearchRides() {
           <div className="card" style={{ textAlign: 'center', padding: '36px' }}>
             <div style={{ width: 40, height: 40, margin: '0 auto 12px', opacity: .3, display: 'flex' }}>{I.search}</div>
             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>
-              {searched ? 'No rides match your search' : 'No rides available right now'}
+              {searched ? 'No trips match your search' : 'No trips available right now'}
             </div>
             <div style={{ fontSize: 13, color: 'var(--text3)' }}>
               {searched ? 'Try a different route or date' : 'Check back soon or post your own ride'}

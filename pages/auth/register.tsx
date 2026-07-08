@@ -1,10 +1,31 @@
-import { useState } from 'react'
+import { useState, Fragment } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import Cookies from 'js-cookie'
 import toast from 'react-hot-toast'
 import { authAPI } from '../../services/api'
 import { I } from '../../components/layout/Layout'
+
+// Larger, friendlier role icons for the "I want to join as" picker — the
+// shared nav icons (I.user/I.car) are tuned for 15-16px sidebar use and look
+// thin/empty at the 26px size a role card needs, so these are sized and
+// weighted for this one spot without touching the shared icon set.
+const RiderRoleIcon = () => (
+  <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+    <circle cx="12" cy="8" r="4" fill="currentColor" opacity="0.15" />
+    <circle cx="12" cy="8" r="4" stroke="currentColor" strokeWidth="1.75" />
+    <path d="M4.5 20c0-4.2 3.4-6.8 7.5-6.8s7.5 2.6 7.5 6.8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
+  </svg>
+)
+const DriverRoleIcon = () => (
+  <svg viewBox="0 0 24 24" width="26" height="26" fill="none">
+    <path d="M7 9.5l1.1-2.8A1.5 1.5 0 019.5 5.7h5a1.5 1.5 0 011.4 1l1.1 2.8" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    <path d="M3.5 16l1.3-5A2 2 0 016.7 9.5h10.6a2 2 0 011.9 1.5l1.3 5" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" />
+    <rect x="2.5" y="16" width="19" height="4" rx="1.5" stroke="currentColor" strokeWidth="1.75" fill="currentColor" fillOpacity="0.15" />
+    <circle cx="7" cy="19.5" r="1.4" fill="currentColor" />
+    <circle cx="17" cy="19.5" r="1.4" fill="currentColor" />
+  </svg>
+)
 
 export default function Register() {
   const router = useRouter()
@@ -14,7 +35,6 @@ export default function Register() {
   const [resending, setResending] = useState(false)
   const [otp,     setOtp]     = useState('')
   const [showPw,  setShowPw]  = useState(false)
-  const [agreed,  setAgreed]  = useState(false)
   const [form, setForm] = useState({ fullName: '', email: '', password: '', confirm: '', role: 'Rider' })
 
   const pwStr = (p: string) => { let s = 0; if(p.length>=8)s++; if(/[A-Z]/.test(p))s++; if(/[0-9]/.test(p))s++; if(/[^A-Za-z0-9]/.test(p))s++; return s }
@@ -28,7 +48,6 @@ export default function Register() {
     if (!form.fullName || !form.email || !form.password) { toast.error('Fill all fields'); return }
     if (form.password !== form.confirm) { toast.error('Passwords do not match'); return }
     if (form.password.length < 8) { toast.error('Password must be at least 8 characters'); return }
-    if (!agreed) { toast.error('Please agree to the terms of service'); return }
     setLoading(true)
     try {
       const res = await authAPI.register({ fullName: form.fullName, email: form.email, password: form.password, role: form.role })
@@ -78,25 +97,20 @@ export default function Register() {
         <div style={{ width: 52, height: 52, background: 'white', borderRadius: 10, padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <img src="/otw.png" alt="OTW" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
-        <Link href="/auth/login" style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>Create account</Link>
+        <Link href="/auth/login" style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>Sign in</Link>
       </header>
 
-      <div className="auth-body auth-split-body">
-        <div className="auth-split-shell">
-          <aside className="auth-split-visual" aria-label="OTW ride sharing community">
-            <img src="/register2.png" alt="Students using OTW rideshare" />
-          </aside>
-
-          <div className="auth-card auth-split-card">
+      <div className="auth-body-center">
+        <div className="login-card" style={{ maxWidth: 480 }}>
           {/* Step indicator */}
           <div className="steps">
             {stepLabels.map((_, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', flex: i < stepLabels.length - 1 ? 1 : 0 }}>
+              <Fragment key={i}>
                 <div className={`step-dot ${step > i + 1 ? 'done' : step === i + 1 ? 'active' : ''}`}>
                   {step > i + 1 ? <span style={{ width: 13, height: 13, display: 'flex' }}>{I.check}</span> : i + 1}
                 </div>
-                {i < stepLabels.length - 1 && <div className={`step-line ${step > i + 1 ? 'done' : ''}`} style={{ flex: 1, margin: '0 4px' }} />}
-              </div>
+                {i < stepLabels.length - 1 && <div className={`step-line ${step > i + 1 ? 'done' : ''}`} />}
+              </Fragment>
             ))}
           </div>
 
@@ -137,9 +151,9 @@ export default function Register() {
               <div className="form-group">
                 <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)', marginBottom: 10 }}>I want to join as</div>
                 <div style={{ display: 'flex', gap: 12 }}>
-                  {[{ id:'Rider', icon:I.user, name:'Rider', desc:'Search and book rides' },{ id:'Driver', icon:I.car, name:'Driver', desc:'Post and manage rides' }].map(r => (
-                    <button key={r.id} onClick={() => setForm(p => ({ ...p, role: r.id }))} style={{ flex: 1, padding: '14px 10px', borderRadius: 12, border: form.role === r.id ? '2px solid var(--green)' : '1.5px solid var(--border2)', background: form.role === r.id ? 'var(--green-l)' : 'var(--bg-card)', cursor: 'pointer', textAlign: 'center', transition: 'all .15s' }}>
-                      <div style={{ width: 38, height: 38, margin: '0 auto 8px', background: form.role === r.id ? 'var(--green-l2)' : 'var(--bg2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: form.role === r.id ? 'var(--green)' : 'var(--text3)' }}>{r.icon}</div>
+                  {[{ id:'Rider', icon:<RiderRoleIcon/>, name:'Rider', desc:'Search and book rides' },{ id:'Driver', icon:<DriverRoleIcon/>, name:'Driver', desc:'Post and manage rides' }].map(r => (
+                    <button key={r.id} onClick={() => setForm(p => ({ ...p, role: r.id }))} style={{ flex: 1, padding: '16px 10px', borderRadius: 12, border: form.role === r.id ? '2px solid var(--green)' : '1.5px solid var(--border2)', background: form.role === r.id ? 'var(--green-l)' : 'var(--bg-card)', cursor: 'pointer', textAlign: 'center', transition: 'all .15s' }}>
+                      <div style={{ width: 44, height: 44, margin: '0 auto 8px', background: form.role === r.id ? 'var(--green-l2)' : 'var(--bg2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: form.role === r.id ? 'var(--green)' : 'var(--text3)' }}>{r.icon}</div>
                       <div style={{ fontSize: 13, fontWeight: 600, color: form.role === r.id ? 'var(--green)' : 'var(--text)', marginBottom: 2 }}>{r.name}</div>
                       <div style={{ fontSize: 11, color: 'var(--text3)' }}>{r.desc}</div>
                     </button>
@@ -147,14 +161,7 @@ export default function Register() {
                 </div>
               </div>
 
-              <div style={{ marginBottom: 20 }}>
-                <label className="check-label">
-                  <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)} />
-                  <span>I agree to the <span style={{ color: 'var(--green)', fontWeight: 500 }}>terms of service</span> and <span style={{ color: 'var(--green)', fontWeight: 500 }}>privacy policy</span></span>
-                </label>
-              </div>
-
-              <button className="btn btn-primary btn-full btn-lg" onClick={register} disabled={loading || !agreed}>
+              <button className="btn btn-primary btn-full btn-lg" onClick={register} disabled={loading} style={{ marginTop: 4 }}>
                 {loading ? 'Creating account...' : 'Continue →'}
               </button>
               <div style={{ textAlign: 'center', marginTop: 16, fontSize: 14, color: 'var(--text3)' }}>
@@ -182,7 +189,6 @@ export default function Register() {
               </div>
             </>
           )}
-          </div>
         </div>
       </div>
     </div>
