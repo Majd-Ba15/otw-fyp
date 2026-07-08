@@ -47,12 +47,6 @@ export default function Vehicle() {
     catch { toast.error('Upload failed') }
   }
 
-  const docs = [
-    { name:'Road Tax',        status: car?.roadTaxExpiry ? 'ok'      : 'missing', expires: car?.roadTaxExpiry  ? `Expires: ${new Date(car.roadTaxExpiry).toLocaleDateString('en',{month:'short',year:'numeric'})}` : 'Not uploaded' },
-    { name:'Insurance',       status: car?.insuranceExpiry ? 'ok'    : 'missing', expires: car?.insuranceExpiry? `Expires: ${new Date(car.insuranceExpiry).toLocaleDateString('en',{month:'short',year:'numeric'})}` : 'Not uploaded' },
-    { name:'Puspakom Report', status: car?.puspakomUploaded ? 'ok'   : 'missing', expires: car?.puspakomUploaded ? 'Uploaded' : 'Not uploaded' },
-  ]
-
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'SM'
 
   return (
@@ -109,28 +103,6 @@ export default function Vehicle() {
               <button className="btn btn-primary btn-sm" style={{flex:1}} onClick={saveEdits} disabled={saving}>{saving?'Saving...':'Save changes'}</button>
             </div>
           )}
-        </div>
-
-        {/* Documents */}
-        <div style={{fontSize:15,fontWeight:600,color:'var(--text)',marginBottom:10}}>Vehicle Documents</div>
-        <div className="card" style={{padding:0,overflow:'hidden'}}>
-          {docs.map((d,i) => (
-            <div key={d.name} style={{display:'flex',alignItems:'center',gap:12,padding:'14px 16px',borderBottom:i<docs.length-1?'1px solid var(--border)':'none',background:d.status==='missing'?'#FFF7ED':'transparent'}}>
-              <div style={{width:28,height:28,borderRadius:'50%',background:d.status==='ok'?'var(--green-l)':'var(--red-l)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                <span style={{width:14,height:14,color:d.status==='ok'?'var(--green)':'var(--red)',display:'flex'}}>{d.status==='ok'?I.check:I.x}</span>
-              </div>
-              <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:500,color:'var(--text)'}}>{d.name}</div>
-                <div style={{fontSize:12,color:d.status==='missing'?'var(--red)':'var(--text3)',marginTop:1}}>{d.expires}</div>
-              </div>
-              {d.status==='ok'
-                ? <button style={{background:'none',border:'none',cursor:'pointer',fontSize:13,color:'var(--blue)',fontWeight:500}}>View</button>
-                : <button className="btn btn-secondary btn-sm" style={{display:'flex',alignItems:'center',gap:4}}>
-                    <span style={{width:12,height:12,display:'flex'}}>{I.plus}</span> Upload
-                  </button>
-              }
-            </div>
-          ))}
         </div>
       </div>
     </Layout>

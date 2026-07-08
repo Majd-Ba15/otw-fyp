@@ -16,15 +16,17 @@ export default function ManageRide() {
     Promise.allSettled([
       userAPI.getMe(),
       id ? rideAPI.getById(Number(id)) : Promise.reject(),
+      id ? rideAPI.getPassengers(Number(id)) : Promise.reject(),
       notifAPI.getUnreadCount(),
-    ]).then(([p, r, n]) => {
+    ]).then(([p, r, pas, n]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
-      if (r.status === 'fulfilled') setRide(r.value.data)
+      const passengers = pas.status === 'fulfilled' ? (pas.value.data || []) : []
+      if (r.status === 'fulfilled') setRide({ ...r.value.data, passengers })
       else {
         // Try sessionStorage cache before showing empty state
         try {
           const cached = sessionStorage.getItem('otw_ride_preview')
-          if (cached) { const d = JSON.parse(cached); if (String(d.rideId) === String(id)) setRide(d) }
+          if (cached) { const d = JSON.parse(cached); if (String(d.rideId) === String(id)) setRide({ ...d, passengers }) }
         } catch {}
       }
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
@@ -42,6 +44,14 @@ export default function ManageRide() {
   }
 
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'SM'
+  const bookedSeats = (r: any) => {
+    if (!r) return 0
+    if (typeof r.bookedSeats === 'number') return r.bookedSeats
+    if (typeof r.totalSeats === 'number' && typeof r.availableSeats === 'number') {
+      return Math.max(0, r.totalSeats - r.availableSeats)
+    }
+    return Array.isArray(r.passengers) ? r.passengers.reduce((sum: number, p: any) => sum + (p.seatsBooked || p.SeatsBooked || 1), 0) : 0
+  }
   const passengerChatHref = (p: any) => {
     const userId = p.rider?.userId || p.riderId || p.userId
     const name = p.rider?.fullName || p.fullName
@@ -107,7 +117,7 @@ export default function ManageRide() {
 
             <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginBottom:12 }}>
               {[
-                { icon:I.users,  val:`${ride.bookedSeats||0}/${ride.totalSeats}`, label:'Passengers' },
+                { icon:I.users,  val:`${bookedSeats(ride)}/${ride.totalSeats}`, label:'Passengers' },
                 { icon:I.dollar, val:`$${ride.pricePerSeat}`,                   label:'Per Seat' },
                 { icon:I.nav,    val:'—',                                          label:'Est. Time' },
               ].map((s,i) => (
@@ -123,16 +133,16 @@ export default function ManageRide() {
               <div style={{ display:'flex', justifyContent:'space-between' }}>
                 <div>
                   <div style={{ fontSize:12,color:'var(--text3)',marginBottom:4 }}>Estimated Earnings</div>
-                  <div style={{ fontSize:22,fontWeight:700,color:'var(--text)' }}>${((ride.bookedSeats||0)*(ride.pricePerSeat||0)).toFixed(2)}</div>
+                  <div style={{ fontSize:22,fontWeight:700,color:'var(--text)' }}>${(bookedSeats(ride)*(ride.pricePerSeat||0)).toFixed(2)}</div>
                 </div>
                 <div style={{ textAlign:'right',fontSize:12,color:'var(--text3)' }}>
-                  <div>{ride.bookedSeats||0} passengers</div>
+                  <div>{bookedSeats(ride)} passengers</div>
                   <div>${ride.pricePerSeat} each</div>
                 </div>
               </div>
             </div>
 
-            <div style={{ fontSize:15,fontWeight:600,color:'var(--text)',marginBottom:10 }}>Passengers ({ride.bookedSeats||0})</div>
+            <div style={{ fontSize:15,fontWeight:600,color:'var(--text)',marginBottom:10 }}>Passengers ({bookedSeats(ride)})</div>
             {(!ride.passengers || ride.passengers.length === 0) ? (
               <div className="card" style={{ textAlign:'center', padding:'28px' }}>
                 <span style={{ width:36,height:36,display:'flex',margin:'0 auto 10px',color:'var(--text4)',opacity:.4 }}>{I.users}</span>

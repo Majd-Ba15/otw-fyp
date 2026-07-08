@@ -17,6 +17,15 @@ export default function DriverDashboard() {
   const [unread,   setUnread]   = useState(0)
   const [loading,  setLoading]  = useState(true)
 
+  const bookedSeats = (ride: any) => {
+    if (!ride) return 0
+    if (typeof ride.bookedSeats === 'number') return ride.bookedSeats
+    if (typeof ride.totalSeats === 'number' && typeof ride.availableSeats === 'number') {
+      return Math.max(0, ride.totalSeats - ride.availableSeats)
+    }
+    return 0
+  }
+
   useEffect(() => {
     const token = Cookies.get('otw_token')
     if (!token) { router.push('/auth/login'); return }
@@ -40,7 +49,7 @@ export default function DriverDashboard() {
           period: new Date(ride.departureTime).getHours() < 12 ? 'AM' : 'PM',
           label: ride.fromLocation + ' → ' + ride.toLocation,
           route: ride.fromLocation + ' → ' + ride.toLocation,
-          booked: `${ride.bookedSeats||0}/${ride.totalSeats}`,
+          booked: `${bookedSeats(ride)}/${ride.totalSeats}`,
           rideId: ride.rideId,
         })))
       } else {
@@ -109,7 +118,7 @@ export default function DriverDashboard() {
         {/* Quick actions */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:10,marginBottom:20}}>
           {[
-            {icon:I.plus,    label:'Post Ride',      href:'/driver/post'},
+            {icon:I.plus,    label:'Post Trip',      href:'/driver/post'},
             {icon:I.car,     label:'Manage Rides',   href:'/driver/rides'},
             {icon:I.ticket,  label:'Requests',       href:'/driver/requests'},
             {icon:I.earnings,label:'Earnings',       href:'/driver/earnings'},
@@ -159,8 +168,8 @@ export default function DriverDashboard() {
           <div className="card" style={{textAlign:'center',padding:'28px',marginBottom:16}}>
             <span style={{width:36,height:36,color:'var(--text4)',display:'flex',margin:'0 auto 10px',opacity:.4}}>{I.car}</span>
             <div style={{fontSize:14,fontWeight:500,color:'var(--text2)'}}>No upcoming rides</div>
-            <div style={{fontSize:12,color:'var(--text3)',marginTop:4}}>Post a ride now</div>
-            <Link href="/driver/post"><button className="btn btn-blue btn-sm" style={{marginTop:12}}>+ Post a ride</button></Link>
+            <div style={{fontSize:12,color:'var(--text3)',marginTop:4}}>Post a trip now</div>
+            <Link href="/driver/post"><button className="btn btn-blue btn-sm" style={{marginTop:12}}>+ Post a trip</button></Link>
           </div>
         ) : upcoming.map((r:any) => (
           <div key={r.rideId} className="card card-hover" style={{marginBottom:10,cursor:'pointer'}} onClick={()=>router.push(`/driver/ride/${r.rideId}`)}>
@@ -173,7 +182,7 @@ export default function DriverDashboard() {
             </div>
             <div style={{display:'flex',gap:14,fontSize:12,color:'var(--text3)'}}>
               <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:12,height:12,display:'flex'}}>{I.clock}</span>{new Date(r.departureTime).toLocaleDateString('en',{weekday:'short',day:'numeric',month:'short'})} · {new Date(r.departureTime).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}</span>
-              <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:12,height:12,display:'flex'}}>{I.users}</span>{r.bookedSeats||0}/{r.totalSeats} booked</span>
+              <span style={{display:'flex',alignItems:'center',gap:4}}><span style={{width:12,height:12,display:'flex'}}>{I.users}</span>{bookedSeats(r)}/{r.totalSeats} booked</span>
             </div>
           </div>
         ))}

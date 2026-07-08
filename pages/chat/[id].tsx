@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+﻿import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import Layout, { I } from '../../components/layout/Layout'
 import { messageAPI, userAPI, notifAPI, rideAPI } from '../../services/api'
@@ -111,6 +111,16 @@ export default function Chat() {
   }
 
   const isMe = (m: any) => m.isMe || m.senderId === myUserId || m.senderId === 0
+  const dayKey = (value: any) => new Date(value || Date.now()).toDateString()
+  const dayLabel = (value: any) => {
+    const date = new Date(value || Date.now())
+    const today = new Date()
+    const yesterday = new Date()
+    yesterday.setDate(today.getDate() - 1)
+    if (date.toDateString() === today.toDateString()) return 'Today'
+    if (date.toDateString() === yesterday.toDateString()) return 'Yesterday'
+    return date.toLocaleDateString('en', { weekday: 'long' })
+  }
   const normalizeMessage = (m: any) => ({
     ...m,
     senderId: m.senderId ?? m.sender?.userId,
@@ -131,7 +141,7 @@ export default function Chat() {
   const selectedPassengerName = selectedPassenger?.rider?.fullName || selectedPassenger?.fullName
   const otherName     = selectedPassengerName || ride?.driverName || ride?.otherUserName || (typeof queryName === 'string' ? queryName : '') || (role === 'Rider' ? 'Your driver' : 'Passenger')
   const otherInitials = ride?.driverInitials || (otherName.split(' ').map((n:string) => n[0]).join('').slice(0,2).toUpperCase())
-  const route         = ride ? `${ride.fromLocation} → ${ride.toLocation}` : ''
+  const route         = ride ? `${ride.fromLocation} â†’ ${ride.toLocation}` : ''
   const accentColor   = role === 'Driver' ? 'var(--blue)' : 'var(--green)'
   const myBubble      = role === 'Driver' ? 'bubble bubble-driver-me' : 'bubble bubble-me'
   const initials      = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'ME'
@@ -191,7 +201,7 @@ export default function Chat() {
           <div style={{ padding: '10px 20px', background: 'var(--blue-l)', borderBottom: `2px solid var(--blue)`, display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ width: 14, height: 14, color: 'var(--blue)', display: 'flex', flexShrink: 0 }}>{I.send}</span>
             <span style={{ fontSize: 12, color: 'var(--blue-d)', fontWeight: 600, flex: 1 }}>
-              Broadcast mode — message will be sent to ALL passengers on this ride
+              Broadcast mode â€” message will be sent to ALL passengers on this ride
             </span>
             <button onClick={() => setShowBroadcast(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--blue-d)', display: 'flex' }}>
               <span style={{ width: 14, height: 14, display: 'flex' }}>{I.x}</span>
@@ -201,21 +211,33 @@ export default function Chat() {
 
         {/* Messages */}
         <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, maxWidth: 700, margin: '0 auto', width: '100%' }}>
-          {visibleMessages.map(m => (
-            <div key={m.messageId} style={{ display: 'flex', justifyContent: isMe(m) ? 'flex-end' : 'flex-start', flexDirection: 'column', alignItems: isMe(m) ? 'flex-end' : 'flex-start' }}>
-              {!isMe(m) && <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2, paddingLeft: 4 }}>{m.senderName}</div>}
-              <div className={isMe(m) ? myBubble : 'bubble bubble-them'}
-                style={m.content?.startsWith('[Broadcast]') ? { background: 'var(--blue)', color: 'white', borderRadius: 14 } : undefined}>
-                {m.content?.replace('[Broadcast] ', '')}
-                {m.content?.startsWith('[Broadcast]') && (
-                  <div style={{ fontSize: 10, opacity: 0.8, marginTop: 3 }}>📢 Sent to all passengers</div>
+          {visibleMessages.map((m, index) => {
+            const showDay = index === 0 || dayKey(m.createdAt) !== dayKey(visibleMessages[index - 1]?.createdAt)
+            return (
+              <div key={m.messageId || index}>
+                {showDay && (
+                  <div style={{ display: 'flex', justifyContent: 'center', margin: '4px 0 12px' }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 999, padding: '4px 10px' }}>
+                      {dayLabel(m.createdAt)}
+                    </span>
+                  </div>
                 )}
+                <div style={{ display: 'flex', justifyContent: isMe(m) ? 'flex-end' : 'flex-start', flexDirection: 'column', alignItems: isMe(m) ? 'flex-end' : 'flex-start' }}>
+                  {!isMe(m) && <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 2, paddingLeft: 4 }}>{m.senderName}</div>}
+                  <div className={isMe(m) ? myBubble : 'bubble bubble-them'}
+                    style={m.content?.startsWith('[Broadcast]') ? { background: 'var(--blue)', color: 'white', borderRadius: 14 } : undefined}>
+                    {m.content?.replace('[Broadcast] ', '')}
+                    {m.content?.startsWith('[Broadcast]') && (
+                      <div style={{ fontSize: 10, opacity: 0.8, marginTop: 3 }}>📢 Sent to all passengers</div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 10, color: 'var(--text4)', marginTop: 3 }}>
+                    {new Date(m.createdAt || Date.now()).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
               </div>
-              <div style={{ fontSize: 10, color: 'var(--text4)', marginTop: 3 }}>
-                {new Date(m.createdAt || Date.now()).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}
-              </div>
-            </div>
-          ))}
+            )
+          })}
           <div ref={bottomRef} />
         </div>
 
@@ -247,3 +269,4 @@ export default function Chat() {
     </Layout>
   )
 }
+

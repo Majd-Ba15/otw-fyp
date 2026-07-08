@@ -60,15 +60,15 @@ export default function PostRide() {
     setLoading(true)
     try{
       await rideAPI.post({fromLocation:form.from,toLocation:form.to,fromLat:form.fromLat||null,fromLng:form.fromLng||null,toLat:form.toLat||null,toLng:form.toLng||null,departureTime:new Date(form.departureTime).toISOString(),totalSeats:form.seats,pricePerSeat:form.price,genderPreference:form.genderPref,notes:form.notes,isRecurring:form.recurring,recurringDays:form.recurringDays.join(','),distanceKm:routeInfo?.distanceKm??null,durationMin:routeInfo?.durationMin??null})
-      toast.success('Ride posted!'); router.push('/driver/rides')
-    }catch(e:any){toast.error(e.response?.data?.message||'Failed to post ride')}
+      toast.success('Trip posted!'); router.push('/driver/rides')
+    }catch(e:any){toast.error(e.response?.data?.message||'Failed to post trip')}
     finally{setLoading(false)}
   }
 
   return (
     <Layout role="Driver" showBack userInitials={initials}>
-      <div className="page-inner" style={{maxWidth:560}}>
-        <h1 style={{fontSize:22,fontWeight:700,color:'var(--text)',marginBottom:16}}>Post a ride</h1>
+      <div className="page-inner" style={{maxWidth:760}}>
+        <h1 style={{fontSize:22,fontWeight:700,color:'var(--text)',marginBottom:16}}>Post a trip</h1>
 
         {/* Route */}
         <div className="card" style={{marginBottom:12}}>
@@ -81,7 +81,7 @@ export default function PostRide() {
                 <span style={{width:13,height:13,display:'flex'}}>{I.pin}</span> Pick
               </button>
             </div>
-            {showMapFrom && <div style={{marginTop:8}}><MapPicker label="" onPick={(lat,lng,name)=>{setForm(p=>({...p,fromLat:lat,fromLng:lng,from:name}));setShowMapFrom(false)}} height={160} userUniversity={profile?.university}/></div>}
+            {showMapFrom && <div style={{marginTop:8}}><MapPicker label="" onPick={(lat,lng,name)=>{setForm(p=>({...p,fromLat:lat,fromLng:lng,from:name}));setShowMapFrom(false)}} height={300} userUniversity={profile?.university}/></div>}
           </div>
           <div>
             <div style={{fontSize:12,color:'var(--text3)',marginBottom:4}}>Drop-off point *</div>
@@ -91,7 +91,7 @@ export default function PostRide() {
                 <span style={{width:13,height:13,display:'flex'}}>{I.pin}</span> Pick
               </button>
             </div>
-            {showMapTo && <div style={{marginTop:8}}><MapPicker label="" onPick={(lat,lng,name)=>{setForm(p=>({...p,toLat:lat,toLng:lng,to:name}));setShowMapTo(false)}} height={160} userUniversity={profile?.university}/></div>}
+            {showMapTo && <div style={{marginTop:8}}><MapPicker label="" onPick={(lat,lng,name)=>{setForm(p=>({...p,toLat:lat,toLng:lng,to:name}));setShowMapTo(false)}} height={300} userUniversity={profile?.university}/></div>}
           </div>
 
           {/* Route preview — appears once BOTH points are set. Draws the real
@@ -105,7 +105,7 @@ export default function PostRide() {
                 from={{lat:form.fromLat,lng:form.fromLng}}
                 to={{lat:form.toLat,lng:form.toLng}}
                 onRoute={setRouteInfo}
-                height={180}
+                height={260}
               />
               {routeInfo && (
                 <div style={{marginTop:6,fontSize:12,fontWeight:600,display:'flex',alignItems:'center',gap:6,color:routeInfo.usedFallback?'#A66A00':'#16a36b'}}>
@@ -123,7 +123,7 @@ export default function PostRide() {
           <input className="input" type="datetime-local" style={{marginBottom:10}} value={form.departureTime} onChange={e=>setForm(p=>({...p,departureTime:e.target.value}))}/>
           <label className="check-label" style={{marginBottom:form.recurring?10:0}}>
             <input type="checkbox" checked={form.recurring} onChange={e=>setForm(p=>({...p,recurring:e.target.checked}))}/>
-            Recurring ride
+            Recurring trip
           </label>
           {form.recurring && (
             <div style={{display:'flex',flexWrap:'wrap',gap:6,marginTop:8}}>
@@ -178,7 +178,7 @@ export default function PostRide() {
         </div>
 
         <button className="btn btn-blue btn-full btn-lg" onClick={submit} disabled={loading}>
-          {loading?'Posting..':'+ Post ride'}
+          {loading?'Posting..':'+ Post trip'}
         </button>
       </div>
     </Layout>

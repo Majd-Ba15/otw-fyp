@@ -1,11 +1,11 @@
-// components/shared/MapPicker.tsx
-// Click on map to pick a location — returns lat/lng and address name
+﻿// components/shared/MapPicker.tsx
+// Click on map to pick a location â€” returns lat/lng and address name
 // Usage: <MapPicker label="Pickup" onPick={(lat,lng,name) => ...} />
 //
 // Additive campus support: every campus from lib/universities.ts is rendered
 // as a pin, plus a horizontal quick-select chip row above the map. Picking a
 // campus (pin or chip) skips Nominatim entirely and reports the clean campus
-// name — the original click-anywhere + reverse-geocode flow is unchanged.
+// name â€” the original click-anywhere + reverse-geocode flow is unchanged.
 
 import { useEffect, useRef, useState } from 'react'
 import { allCampuses, type Campus } from '../../lib/universities'
@@ -16,18 +16,26 @@ interface Props {
   initial?:           { lat: number; lng: number }
   height?:            number
   userUniversity?:    string   // orders that university's campuses first in the chip row
-  highlightCampuses?: boolean  // default true — set false on compact in-form pickers to hide pins/chips
+  highlightCampuses?: boolean  // default true â€” set false on compact in-form pickers to hide pins/chips
 }
 
-// "LAU Beirut Campus" -> "LAU Beirut" — short enough for a pin label / chip
+// "LAU Beirut Campus" -> "LAU Beirut" â€” short enough for a pin label / chip
 function shortCampusName(name: string): string {
   return name.replace(/\s*Campus$/i, '')
+}
+
+function campusIconHtml(name: string, showLabel: boolean): string {
+  if (!showLabel) {
+    return '<div style="width:14px;height:14px;border-radius:50%;background:#185FA5;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35)"></div>'
+  }
+  return `<div style="display:inline-flex;align-items:center;gap:3px;background:#185FA5;color:#fff;padding:3px 8px;border-radius:14px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);font-size:10px;font-weight:700;white-space:nowrap">${shortCampusName(name)}</div>`
 }
 
 export default function MapPicker({ label, onPick, initial, height = 180, userUniversity, highlightCampuses = true }: Props) {
   const ref        = useRef<HTMLDivElement>(null)
   const mapRef     = useRef<any>(null)
   const markRef    = useRef<any>(null)
+  const campusMarkersRef = useRef<any[]>([])
   const leafletRef = useRef<any>(null)   // holds the loaded `L` module so chip clicks (outside the async init) can use it
   const [picked, setPicked] = useState<string | null>(null)
 
@@ -40,7 +48,7 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
       })
     : []
 
-  // Reverse-geocode via Nominatim — used for free map clicks and for dragging
+  // Reverse-geocode via Nominatim â€” used for free map clicks and for dragging
   // the marker away from a picked campus (it's no longer an exact campus point).
   function reverseGeocode(lat: number, lng: number, marker: any) {
     fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
@@ -59,7 +67,7 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
   }
 
   // Selecting a campus (pin click or chip tap): move/create the draggable
-  // marker at the exact campus coords, report the clean campus name — no
+  // marker at the exact campus coords, report the clean campus name â€” no
   // Nominatim call, so it can never get overwritten by a nearby street address.
   function selectCampus(lat: number, lng: number, name: string) {
     const L = leafletRef.current
@@ -98,7 +106,7 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
         shadowUrl:     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
       })
 
-      // Default center — Lebanon (Beirut)
+      // Default center â€” Lebanon (Beirut)
       const center: [number, number] = initial
         ? [initial.lat, initial.lng]
         : [33.8869, 35.5131]
@@ -111,7 +119,7 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
       mapRef.current = map
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap'
+        attribution: 'Â© OpenStreetMap'
       }).addTo(map)
 
       map.setView(center, 15)
@@ -142,27 +150,36 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
         reverseGeocode(lat, lng, markRef.current)
       })
 
-      // Campus pins — one per campus, always visible, distinct from the
+      // Campus pins â€” one per campus, always visible, distinct from the
       // free-pick marker. Clicking one selects it exactly like a map click,
       // except the name is the campus name (no Nominatim call).
       if (highlightCampuses) {
+        const makeCampusIcon = (name: string, showLabel: boolean) => L.divIcon({
+          className: '',
+          html: campusIconHtml(name, showLabel),
+          iconSize: [14, 14],
+          iconAnchor: [7, 7],
+        })
+
         campuses.forEach(c => {
-          const icon = L.divIcon({
-            className: '',
-            html: `<div style="display:inline-flex;align-items:center;gap:3px;background:#185FA5;color:#fff;padding:3px 8px;border-radius:14px;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.35);font-size:10px;font-weight:700;white-space:nowrap">🎓 ${shortCampusName(c.name)}</div>`,
-            iconSize: [10, 10],
-            iconAnchor: [5, 5],
-          })
-          L.marker([c.lat, c.lng], { icon, zIndexOffset: 500 })
+          const marker = L.marker([c.lat, c.lng], { icon: makeCampusIcon(c.name, map.getZoom() >= 12), zIndexOffset: 500 })
             .addTo(map)
             .on('click', () => selectCampus(c.lat, c.lng, c.name))
+          campusMarkersRef.current.push({ marker, name: c.name })
+        })
+
+        map.on('zoomend', () => {
+          const showLabel = map.getZoom() >= 12
+          campusMarkersRef.current.forEach(({ marker, name }) => {
+            marker.setIcon(makeCampusIcon(name, showLabel))
+          })
         })
       }
     })
 
     return () => {
       cancelled = true
-      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; markRef.current = null; leafletRef.current = null }
+      if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; markRef.current = null; campusMarkersRef.current = []; leafletRef.current = null }
     }
   }, [])
 
@@ -170,14 +187,14 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
     <>
       <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
       <div style={{ marginBottom: 6 }}>
-        <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 4, fontWeight: 500 }}>{label} — tap map to set location</div>
+        <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 4, fontWeight: 500 }}>{label ? `${label} - ` : ''}tap map to set location</div>
 
         {highlightCampuses && campuses.length > 0 && (
           <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 6, marginBottom: 4, scrollbarWidth: 'thin' }}>
             {campuses.map(c => (
               <button key={c.name} type="button" className={`chip ${picked === c.name ? 'active' : ''}`}
                 onClick={() => selectCampus(c.lat, c.lng, c.name)}>
-                🎓 {shortCampusName(c.name)}
+                {shortCampusName(c.name)}
               </button>
             ))}
           </div>
@@ -186,7 +203,7 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
         <div ref={ref} style={{ height, width: '100%', borderRadius: 10, overflow: 'hidden', border: `1.5px dashed ${picked ? '#16a36b' : 'var(--border)'}`, cursor: 'crosshair' }} />
         {picked && (
           <div style={{ fontSize: 11, color: '#16a36b', marginTop: 4, display: 'flex', gap: 4, alignItems: 'center' }}>
-            <span>📍</span><span>{picked}</span>
+            <span>ðŸ“</span><span>{picked}</span>
           </div>
         )}
         {!picked && (
@@ -196,3 +213,4 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
     </>
   )
 }
+

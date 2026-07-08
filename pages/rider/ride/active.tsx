@@ -124,15 +124,11 @@ export default function RiderActiveRide() {
                 <div style={{ fontSize: 12, color: 'var(--text3)' }}>{booking.driver.car?.colour}</div>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
               <button className="btn btn-secondary btn-full"
                 style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 13 }}
                 onClick={() => router.push(`/chat/${booking.bookingId}`)}>
                 <span style={{ width: 15, height: 15, display: 'flex' }}>{I.msg}</span> Chat
-              </button>
-              <button className="btn btn-secondary btn-full"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 5, fontSize: 13 }}>
-                <span style={{ width: 15, height: 15, display: 'flex' }}>{I.phone}</span> Call
               </button>
             </div>
           </div>

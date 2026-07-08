@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import Layout, { I } from '../../components/layout/Layout'
-import { userAPI } from '../../services/api'
+import { bookingAPI, userAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 import { useRouter } from 'next/router'
 import Cookies from 'js-cookie'
@@ -18,7 +18,12 @@ export default function RiderProfile() {
 
   useEffect(() => {
     userAPI.getMe().then(r => { setProfile(r.data); setForm({ phone: r.data.phone || '', campusName: r.data.campusName || '' }) }).catch(() => {})
-    userAPI.getStats().then(r => setRidesTaken(r.data?.completedRides || 0)).catch(() => {})
+    bookingAPI.getHistory().then(r => {
+      const bookings = Array.isArray(r.data) ? r.data : []
+      setRidesTaken(bookings.filter((b: any) => b.status === 'Confirmed' || b.status === 'Completed').length)
+    }).catch(() => {
+      userAPI.getStats().then(r => setRidesTaken(r.data?.ridesTaken || r.data?.completedRides || 0)).catch(() => {})
+    })
   }, [])
 
   const save = async () => {
@@ -30,6 +35,7 @@ export default function RiderProfile() {
 
   const logout = () => { Cookies.remove('otw_token'); router.push('/auth/login') }
   const initials = profile?.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'AK'
+  const isVerified = Boolean(profile?.isVerified || profile?.isEmailVerified)
 
   const menuItems = [
     { icon: I.sos,    label: 'Emergency contacts',   href: '/rider/emergency' },
@@ -55,7 +61,7 @@ export default function RiderProfile() {
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{profile?.fullName}</div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
             <span className="badge badge-green">Rider</span>
-            {profile?.isVerified && <span className="badge badge-green">Verified</span>}
+            {isVerified && <span className="badge badge-green">Verified</span>}
             <UniversityBadge code={profile?.university} campusName={profile?.campusName} />
           </div>
           {findUniversity(profile?.university) && findUniversity(profile?.university)!.code !== 'OTHER' && (
@@ -70,7 +76,7 @@ export default function RiderProfile() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 10, marginBottom: 12 }}>
           {[
             { val: ridesTaken, label: 'Rides taken', icon: I.pin, color: 'var(--green)' },
-            { val: profile?.isVerified ? 'Verified' : 'Pending', label: 'Account status', icon: I.shield, color: profile?.isVerified ? 'var(--green)' : '#F59E0B' },
+            { val: isVerified ? 'Verified' : 'Pending', label: 'Account status', icon: I.shield, color: isVerified ? 'var(--green)' : '#F59E0B' },
           ].map((s, i) => (
             <div key={i} className="stat-card" style={{ textAlign: 'center' }}>
               <span style={{ width: 20, height: 20, color: s.color, display: 'flex', margin: '0 auto 4px' }}>{s.icon}</span>

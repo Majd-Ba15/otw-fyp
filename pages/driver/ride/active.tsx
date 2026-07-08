@@ -12,18 +12,25 @@ type RideStatus = 'in_progress' | 'paused' | 'completed'
 export default function DriverActiveRide() {
   const router = useRouter()
 
-  const [profile,    setProfile]    = useState<any>(null)
-  const [ride,       setRide]       = useState<any>(null)
-  const [activeRides,setActiveRides]= useState<any[]>([])
-  const [unread,     setUnread]     = useState(0)
-  const [gpsLat,     setGpsLat]     = useState<number | null>(null)
-  const [gpsLng,     setGpsLng]     = useState<number | null>(null)
-  const [status,     setStatus]     = useState<RideStatus>('in_progress')
-  const [progress,   setProgress]   = useState(0)
+  const [profile, setProfile] = useState<any>(null)
+  const [ride, setRide] = useState<any>(null)
+  const [activeRides, setActiveRides] = useState<any[]>([])
+  const [unread, setUnread] = useState(0)
+  const [gpsLat, setGpsLat] = useState<number | null>(null)
+  const [gpsLng, setGpsLng] = useState<number | null>(null)
+  const [status, setStatus] = useState<RideStatus>('in_progress')
+  const [progress, setProgress] = useState(0)
   const [completing, setCompleting] = useState(false)
 
-  const watchRef    = useRef<number | null>(null)
+  const watchRef = useRef<number | null>(null)
   const progressRef = useRef<any>(null)
+
+  const hydratePassengers = (selectedRide: any) => {
+    if (!selectedRide?.rideId) return
+    rideAPI.getPassengers(selectedRide.rideId)
+      .then(res => setRide((current: any) => current?.rideId === selectedRide.rideId ? { ...current, passengers: res.data || [] } : current))
+      .catch(() => {})
+  }
 
   useEffect(() => {
     Promise.allSettled([
@@ -36,12 +43,14 @@ export default function DriverActiveRide() {
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
 
       const activeRide = r.status === 'fulfilled' ? r.value.data : null
-      const allActive  = all.status === 'fulfilled' ? (all.value.data || []) : []
+      const allActive = all.status === 'fulfilled' ? (all.value.data || []) : []
       setActiveRides(allActive)
 
-      // Auto-select the single active ride, or the first one if multiple
-      if (activeRide) setRide(activeRide)
-      else if (allActive.length > 0) setRide(allActive[0])
+      const selectedRide = activeRide || allActive[0]
+      if (selectedRide) {
+        setRide(selectedRide)
+        hydratePassengers(selectedRide)
+      }
     })
 
     startGps()
@@ -59,7 +68,9 @@ export default function DriverActiveRide() {
       pos => {
         setGpsLat(pos.coords.latitude)
         setGpsLng(pos.coords.longitude)
-        locationAPI.update({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }).catch(() => {})
+        if (ride?.rideId) {
+          locationAPI.update({ rideId: ride.rideId, lat: pos.coords.latitude, lng: pos.coords.longitude }).catch(() => {})
+        }
       },
       () => {},
       { enableHighAccuracy: true, maximumAge: 3000 }
@@ -88,7 +99,7 @@ export default function DriverActiveRide() {
     stopGps()
     clearInterval(progressRef.current)
     try { await rideAPI.update(ride?.rideId, { status: 'Paused' }) } catch {}
-    toast('Ride paused — tap Resume when ready to continue')
+    toast('Ride paused - tap Resume when ready to continue')
   }
 
   const resume = async () => {
@@ -112,10 +123,30 @@ export default function DriverActiveRide() {
   }
 
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'SM'
+  const passengerRows = (r: any) => {
+    const rows = Array.isArray(r?.passengers) && r.passengers.length > 0
+      ? r.passengers
+      : (r?.bookings || r?.Bookings || [])
+    return rows.filter((p: any) => {
+      const rowStatus = p.status || p.Status
+      return !rowStatus || rowStatus === 'Confirmed' || rowStatus === 'Completed'
+    })
+  }
+  const seatsBooked = (p: any) => p.seatsBooked || p.SeatsBooked || 1
+  const riderOf = (p: any) => p.rider || p.Rider || {}
+  const passengerName = (p: any) => riderOf(p).fullName || riderOf(p).FullName || p.fullName || p.FullName || 'Passenger'
+  const passengerUserId = (p: any) => riderOf(p).userId || riderOf(p).UserId || p.riderId || p.RiderId || p.userId
+  const bookedSeats = (r: any) => {
+    const rows = passengerRows(r)
+    if (rows.length > 0) return rows.reduce((sum: number, p: any) => sum + seatsBooked(p), 0)
+    if (typeof r?.bookedSeats === 'number') return r.bookedSeats
+    if (typeof r?.totalSeats === 'number' && typeof r?.availableSeats === 'number') return Math.max(0, r.totalSeats - r.availableSeats)
+    return 0
+  }
 
   const statusColor = status === 'paused' ? '#F59E0B' : status === 'completed' ? '#16a36b' : '#2563EB'
   const statusLabel = status === 'paused' ? 'Paused' : status === 'completed' ? 'Completed' : 'In Progress'
-  const statusBg    = status === 'paused' ? '#FEF3C7' : status === 'completed' ? '#D1FAE5' : '#EFF6FF'
+  const statusBg = status === 'paused' ? '#FEF3C7' : status === 'completed' ? '#D1FAE5' : '#EFF6FF'
 
   if (!ride && status !== 'completed') return (
     <Layout title="Active ride" role="Driver" userInitials={initials} unreadCount={unread}>
@@ -130,8 +161,6 @@ export default function DriverActiveRide() {
 
   return (
     <Layout title="Active ride" role="Driver" userInitials={initials} unreadCount={unread}>
-
-      {/* Ride selector — shown when driver has multiple active rides */}
       {activeRides.length > 1 && (
         <div style={{ padding: '10px 16px', background: 'var(--bg2)', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: 12, color: 'var(--text3)', whiteSpace: 'nowrap' }}>Tracking:</span>
@@ -141,18 +170,22 @@ export default function DriverActiveRide() {
             value={ride?.rideId || ''}
             onChange={e => {
               const selected = activeRides.find(r => String(r.rideId) === e.target.value)
-              if (selected) { setRide(selected); setProgress(0); setStatus('in_progress') }
+              if (selected) {
+                setRide(selected)
+                setProgress(0)
+                setStatus('in_progress')
+                hydratePassengers(selected)
+              }
             }}>
             {activeRides.map(r => (
               <option key={r.rideId} value={r.rideId}>
-                {r.fromLocation} → {r.toLocation}
+                {r.fromLocation} - {r.toLocation}
               </option>
             ))}
           </select>
         </div>
       )}
 
-      {/* Live map */}
       <div className="map-contain" style={{ height: 300, borderBottom: '1px solid var(--border)' }}>
         {gpsLat ? (
           <MapLive
@@ -165,22 +198,20 @@ export default function DriverActiveRide() {
           <div style={{ height: 300, background: 'var(--bg2)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <span style={{ width: 36, height: 36, color: 'var(--text4)', display: 'flex', opacity: .4 }}>{I.nav}</span>
             <span style={{ fontSize: 13, color: 'var(--text3)' }}>Enable location for live map</span>
-            <span style={{ fontSize: 12, color: 'var(--text4)' }}>{ride?.fromLocation} → {ride?.toLocation}</span>
+            <span style={{ fontSize: 12, color: 'var(--text4)' }}>{ride?.fromLocation} - {ride?.toLocation}</span>
           </div>
         )}
       </div>
 
       <div className="page-inner">
-
-        {/* Status banner */}
         <div style={{ background: statusBg, border: `1px solid ${statusColor}30`, borderRadius: 12, padding: '12px 16px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: statusColor, flexShrink: 0, boxShadow: status === 'in_progress' ? `0 0 0 3px ${statusColor}30` : 'none' }} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: statusColor }}>{statusLabel}</div>
             <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 1 }}>
-              {status === 'in_progress' && `${ride?.fromLocation} → ${ride?.toLocation}`}
-              {status === 'paused' && 'Ride is paused — tap Resume to continue'}
-              {status === 'completed' && 'All done! Redirecting to rate riders…'}
+              {status === 'in_progress' && `${ride?.fromLocation} - ${ride?.toLocation}`}
+              {status === 'paused' && 'Ride is paused - tap Resume to continue'}
+              {status === 'completed' && 'All done! Redirecting to rate riders...'}
             </div>
           </div>
           <span style={{ fontSize: 12, fontWeight: 600, color: statusColor, background: `${statusColor}15`, padding: '3px 10px', borderRadius: 20 }}>
@@ -188,12 +219,10 @@ export default function DriverActiveRide() {
           </span>
         </div>
 
-        {/* Progress bar */}
         <div className="bar-track" style={{ marginBottom: 16, height: 8, borderRadius: 4, background: 'var(--bg2)' }}>
           <div style={{ height: '100%', borderRadius: 4, background: statusColor, width: `${progress}%`, transition: 'width 2s ease, background 0.3s' }} />
         </div>
 
-        {/* Route */}
         <div className="card" style={{ marginBottom: 12 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <div className="rdot-g" />
@@ -212,28 +241,29 @@ export default function DriverActiveRide() {
           </div>
         </div>
 
-        {/* Passengers */}
-        {ride?.passengers?.length > 0 && (
+        {passengerRows(ride).length > 0 && (
           <div className="card" style={{ marginBottom: 12 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>
-              Passengers ({ride.passengers.length})
+              Passengers ({bookedSeats(ride)})
             </div>
-            {ride.passengers.map((p: any) => (
-              <div key={p.bookingId} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
-                <div className="av" style={{ width: 32, height: 32, fontSize: 11 }}>{(p.rider?.fullName || 'PA').slice(0,2).toUpperCase()}</div>
-                <span style={{ flex: 1, fontSize: 13, color: 'var(--text)' }}>{p.rider?.fullName}</span>
-                <button className="btn btn-secondary btn-sm" onClick={() => router.push(`/chat/${ride.rideId}`)}>Chat</button>
+            {passengerRows(ride).map((p: any) => (
+              <div key={p.bookingId || p.BookingId || passengerUserId(p)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 0', borderBottom: '1px solid var(--border)' }}>
+                <div className="av" style={{ width: 32, height: 32, fontSize: 11 }}>{passengerName(p).slice(0,2).toUpperCase()}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, color: 'var(--text)' }}>{passengerName(p)}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>{seatsBooked(p)} seat{seatsBooked(p) > 1 ? 's' : ''}</div>
+                </div>
+                <button className="btn btn-secondary btn-sm" onClick={() => router.push(`/chat/${ride.rideId}${passengerUserId(p) ? `?userId=${passengerUserId(p)}&name=${encodeURIComponent(passengerName(p))}` : ''}`)}>Chat</button>
               </div>
             ))}
           </div>
         )}
 
-        {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 20 }}>
           {[
-            { val: ride?.bookedSeats || 0, label: 'Passengers' },
-            { val: `$${((ride?.bookedSeats||0)*(ride?.pricePerSeat||0)).toFixed(0)}`, label: 'Earnings' },
-            { val: status === 'paused' ? '⏸ Paused' : status === 'completed' ? '✓ Done' : '▶ Live', label: 'Status' },
+            { val: bookedSeats(ride), label: 'Passengers' },
+            { val: `$${(bookedSeats(ride)*(ride?.pricePerSeat||0)).toFixed(0)}`, label: 'Earnings' },
+            { val: status === 'paused' ? 'Paused' : status === 'completed' ? 'Done' : 'Live', label: 'Status' },
           ].map((s, i) => (
             <div key={i} className="stat-card" style={{ textAlign: 'center', padding: '12px 8px' }}>
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{s.val}</div>
@@ -242,7 +272,6 @@ export default function DriverActiveRide() {
           ))}
         </div>
 
-        {/* Action buttons */}
         {status !== 'completed' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {status === 'in_progress' ? (

@@ -108,7 +108,7 @@ export default function MultipleStops() {
             ) : rides.length === 0 ? (
               <div className="card" style={{ textAlign: 'center', padding: 32 }}>
                 <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 12 }}>No rides posted yet</div>
-                <button className="btn btn-blue btn-sm" onClick={() => router.push('/driver/post')}>Post a ride</button>
+                <button className="btn btn-blue btn-sm" onClick={() => router.push('/driver/post')}>Post a trip</button>
               </div>
             ) : rides.map((r: any) => (
               <div key={r.rideId} className="card card-hover"

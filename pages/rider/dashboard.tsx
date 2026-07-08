@@ -52,6 +52,15 @@ export default function RiderDashboard() {
     return `${d.toLocaleDateString('en',{weekday:'short',day:'numeric',month:'short'})} · ${t}`
   }
 
+  const bookedLabel = (booking: any) => {
+    const seats = booking?.seatsBooked || booking?.SeatsBooked || 1
+    return `${seats} seat${seats > 1 ? 's' : ''} booked`
+  }
+  const driverOfBooking = (booking: any) => booking?.driver || booking?.Driver || booking?.ride?.driver || booking?.ride?.Driver || {}
+  const driverName = (booking: any) => driverOfBooking(booking).fullName || driverOfBooking(booking).FullName || 'Driver'
+  const driverInitials = (booking: any) => driverOfBooking(booking).initials || driverName(booking).split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase()
+  const driverRating = (booking: any) => driverOfBooking(booking).averageRating ?? driverOfBooking(booking).AverageRating
+
   return (
     <Layout role="Rider" userInitials={initials} userName={profile?.fullName} unreadCount={unread}>
       <div className="page-inner">
@@ -117,10 +126,17 @@ export default function RiderDashboard() {
         ) : bookings.map((b:any) => (
           <div key={b.bookingId} className="card card-hover" style={{marginBottom:10,cursor:'pointer'}} onClick={()=>router.push(`/rider/ride/${b.ride?.rideId||1}`)}>
             <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:8}}>
-              <div className="av">{b.driver?.initials||b.driver?.fullName?.slice(0,2).toUpperCase()}</div>
+              <div className="av">{driverInitials(b)}</div>
               <div style={{flex:1}}>
-                <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{b.driver?.fullName}</div>
-                <div style={{fontSize:11,color:'var(--text3)'}}>{fmtTime(b.ride?.departureTime)}</div>
+                <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{driverName(b)}</div>
+                <div style={{display:'flex',alignItems:'center',gap:8,fontSize:11,color:'var(--text3)'}}>
+                  <span>{fmtTime(b.ride?.departureTime)}</span>
+                  {driverRating(b) != null && (
+                    <span style={{display:'flex',alignItems:'center',gap:3,color:'#F59E0B'}}>
+                      <span style={{width:11,height:11,display:'flex'}}>{I.starF}</span>{driverRating(b)}
+                    </span>
+                  )}
+                </div>
               </div>
               <span className={`badge ${b.status==='Confirmed'?'badge-green':'badge-amber'}`}>{b.status==='Confirmed'?'Ride confirmed':'Trip pending'}</span>
             </div>
@@ -130,7 +146,7 @@ export default function RiderDashboard() {
             </div>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <span style={{display:'flex',alignItems:'center',gap:5,fontSize:12,color:'var(--text3)'}}>
-                <span style={{width:12,height:12,display:'flex'}}>{I.users}</span>{b.ride?.availableSeats} seats left
+                <span style={{width:12,height:12,display:'flex'}}>{I.users}</span>{b.status === 'Confirmed' ? bookedLabel(b) : `${b.ride?.availableSeats} seats left`}
               </span>
               <span style={{fontSize:14,fontWeight:700,color:'var(--green)'}}>${b.ride?.pricePerSeat}</span>
             </div>

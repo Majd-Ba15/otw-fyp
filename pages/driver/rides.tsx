@@ -12,6 +12,15 @@ export default function MyRides() {
   const [loading, setLoading] = useState(true)
   const [unread,  setUnread]  = useState(0)
 
+  const bookedSeats = (ride: any) => {
+    if (!ride) return 0
+    if (typeof ride.bookedSeats === 'number') return ride.bookedSeats
+    if (typeof ride.totalSeats === 'number' && typeof ride.availableSeats === 'number') {
+      return Math.max(0, ride.totalSeats - ride.availableSeats)
+    }
+    return 0
+  }
+
   useEffect(() => {
     Promise.allSettled([
       userAPI.getMe(),
@@ -41,7 +50,7 @@ export default function MyRides() {
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
           <h1 style={{fontSize:22,fontWeight:700,color:'var(--text)'}}>My rides</h1>
           <button className="btn btn-blue btn-sm" style={{display:'flex',alignItems:'center',gap:5}} onClick={()=>router.push('/driver/post')}>
-            <span style={{width:14,height:14,display:'flex'}}>{I.plus}</span> Post a ride
+            <span style={{width:14,height:14,display:'flex'}}>{I.plus}</span> Post a trip
           </button>
         </div>
 
@@ -57,7 +66,7 @@ export default function MyRides() {
           <div className="card" style={{textAlign:'center',padding:'32px'}}>
             <span style={{width:36,height:36,display:'flex',margin:'0 auto 10px',color:'var(--text4)',opacity:.4}}>{I.car}</span>
             <div style={{fontSize:14,color:'var(--text3)'}}>No rides in this category</div>
-            <button className="btn btn-blue btn-sm" style={{marginTop:12}} onClick={()=>router.push('/driver/post')}>Post a ride</button>
+            <button className="btn btn-blue btn-sm" style={{marginTop:12}} onClick={()=>router.push('/driver/post')}>Post a trip</button>
           </div>
         ) : filtered.map(r => (
           <div key={r.rideId} className="card card-hover" style={{cursor:'pointer',marginBottom:10}} onClick={()=>{ try { sessionStorage.setItem('otw_ride_preview', JSON.stringify(r)) } catch {}; router.push(`/driver/ride/${r.rideId}`) }}>
@@ -77,7 +86,7 @@ export default function MyRides() {
               </span>
               <span style={{display:'flex',alignItems:'center',gap:4}}>
                 <span style={{width:12,height:12,display:'flex'}}>{I.users}</span>
-                {r.bookedSeats}/{r.totalSeats} booked
+                {bookedSeats(r)}/{r.totalSeats} booked
               </span>
             </div>
             {Array.isArray(r.stops) && r.stops.length > 0 && (

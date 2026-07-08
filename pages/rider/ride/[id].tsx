@@ -143,7 +143,6 @@ export default function RideDetail() {
               ) : I.heart}
             </span>
           </button>
-          <button className="btn-icon btn-secondary" aria-label="Share"><span style={{ width: 16, height: 16, display: 'flex' }}>{I.share}</span></button>
         </div>
 
         {/* Full badge */}
@@ -171,15 +170,11 @@ export default function RideDetail() {
               <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 1 }}>{ride.driver?.faculty}</div>
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 8 }}>
             <button className="btn btn-secondary btn-full"
               style={{ fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               onClick={messageDriver}>
               <span style={{ width: 15, height: 15, display: 'flex' }}>{I.msg}</span> Message
-            </button>
-            <button className="btn btn-secondary btn-full"
-              style={{ fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <span style={{ width: 15, height: 15, display: 'flex' }}>{I.phone}</span> Call
             </button>
           </div>
         </div>

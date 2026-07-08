@@ -111,7 +111,7 @@ const RIDER_NAV = [
 const DRIVER_NAV = [
   { section: 'Driver' },
   { path:'/driver/dashboard',   icon:'dash',    label:'Dashboard' },
-  { path:'/driver/post',        icon:'plus',    label:'Post a ride' },
+  { path:'/driver/post',        icon:'plus',    label:'Post a trip' },
   { path:'/driver/availability',icon:'clock',   label:'Availability' },
   { path:'/driver/ride/active', icon:'wifi',    label:'Active ride' },
   { section: 'My rides' },
