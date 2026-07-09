@@ -99,7 +99,6 @@ const RIDER_NAV = [
   { section: 'Account' },
   { path:'/rider/profile',      icon:'user',    label:'Profile' },
   { path:'/chat/[id]',          icon:'msg',     label:'Chat' },
-  { path:'/notifications',      icon:'bell',    label:'Notifications' },
   { path:'/rider/chat-ai',      icon:'robot',   label:'AI assistant' },
   { section: 'Safety' },
   { path:'/sos',                icon:'sos',     label:'SOS' },
@@ -124,7 +123,6 @@ const DRIVER_NAV = [
   { path:'/driver/vehicle',     icon:'car',     label:'Vehicle' },
   { path:'/driver/profile',     icon:'user',    label:'Profile' },
   { path:'/chat/[id]',          icon:'msg',     label:'Chat' },
-  { path:'/notifications',      icon:'bell',    label:'Notifications' },
   { path:'/driver/chat-ai',     icon:'robot',   label:'AI assistant' },
 ]
 const ADMIN_NAV = [

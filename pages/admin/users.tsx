@@ -16,7 +16,6 @@ export default function UserManagement() {
 
   // Modals
   const [selectedUser, setSelectedUser] = useState<any>(null)
-  const [viewModal, setViewModal] = useState(false)
   const [editModal, setEditModal] = useState(false)
   const [banModal, setBanModal] = useState(false)
   const [deleteModal, setDeleteModal] = useState(false)
@@ -24,7 +23,10 @@ export default function UserManagement() {
   const [saving, setSaving] = useState(false)
 
   // Edit form
-  const [editForm, setEditForm] = useState({ fullName: '', phone: '', email: '', role: '' })
+  const [editForm, setEditForm] = useState({
+    fullName: '', email: '', studentId: '', faculty: '', phone: '', gender: '',
+    role: '', university: '', campusName: '', isActive: true, isVerified: false, isEmailVerified: false,
+  })
   const [banReason, setBanReason] = useState('')
 
   useEffect(() => {
@@ -55,15 +57,22 @@ export default function UserManagement() {
   const avatarColor = (role:string) => role==='Driver'?{bg:'#EFF6FF',color:'#3B82F6'}:role==='Admin'?{bg:'var(--amber-l)',color:'var(--amber)'}:{bg:'var(--green-l)',color:'var(--green-dd)'}
 
   // Action handlers
-  const openViewModal = (user: any) => {
-    setSelectedUser(user)
-    setViewModal(true)
-    setActionMenu(null)
-  }
-
   const openEditModal = (user: any) => {
     setSelectedUser(user)
-    setEditForm({ fullName: user.fullName, phone: user.phone || '', email: user.email, role: user.role })
+    setEditForm({
+      fullName: user.fullName || '',
+      email: user.email || '',
+      studentId: user.studentId || '',
+      faculty: user.faculty || '',
+      phone: user.phone || '',
+      gender: user.gender || '',
+      role: user.role || 'Rider',
+      university: user.university || '',
+      campusName: user.campusName || '',
+      isActive: user.isActive !== false,
+      isVerified: !!user.isVerified,
+      isEmailVerified: !!user.isEmailVerified,
+    })
     setEditModal(true)
     setActionMenu(null)
   }
@@ -88,10 +97,10 @@ export default function UserManagement() {
     }
     setSaving(true)
     try {
-      await userAPI.updateMe({ fullName: editForm.fullName, phone: editForm.phone, role: editForm.role })
+      await adminAPI.updateUser(selectedUser.userId, editForm)
 
       // Update local state
-      setUsers(users.map(u => u.userId === selectedUser.userId ? { ...u, fullName: editForm.fullName, phone: editForm.phone, role: editForm.role } : u))
+      setUsers(users.map(u => u.userId === selectedUser.userId ? { ...u, ...editForm } : u))
 
       toast.success('User updated!')
       setEditModal(false)
@@ -202,7 +211,6 @@ export default function UserManagement() {
                     </div>
                   </div>
                   <div style={{display:'flex',alignItems:'center',gap:10,flexShrink:0}}>
-                    <button onClick={(e)=>{e.stopPropagation(); openViewModal(u)}} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text3)',width:16,height:16,display:'flex'}}>{I.eye}</button>
                     <div style={{position:'relative'}}>
                       <button onClick={(e)=>{e.stopPropagation(); setActionMenu(actionMenu === u.userId ? null : u.userId)}} style={{background:'none',border:'none',cursor:'pointer',color:'var(--text3)',width:16,height:16,display:'flex'}}>{I.more}</button>
                       {actionMenu === u.userId && (
@@ -220,76 +228,42 @@ export default function UserManagement() {
           </div>
         )}
       </div>
-
-      {/* VIEW MODAL */}
-      {viewModal && selectedUser && (
-        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}} onClick={()=>setViewModal(false)}>
-          <div className="card" style={{width:'90%',maxWidth:400,maxHeight:'80vh',overflow:'auto'}} onClick={(e)=>e.stopPropagation()}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-              <h2 style={{fontSize:18,fontWeight:700}}>User Details</h2>
-              <button onClick={()=>setViewModal(false)} style={{background:'none',border:'none',cursor:'pointer',fontSize:20}}>✕</button>
-            </div>
-            <div style={{display:'flex',gap:12,marginBottom:16}}>
-              <div style={{width:60,height:60,borderRadius:'50%',background:'var(--green-l)',color:'var(--green)',fontSize:18,fontWeight:700,display:'flex',alignItems:'center',justifyContent:'center'}}>
-                {getInitials(selectedUser.fullName)}
-              </div>
-              <div>
-                <div style={{fontSize:14,fontWeight:600,color:'var(--text)'}}>{selectedUser.fullName}</div>
-                <div style={{fontSize:12,color:'var(--text3)'}}>{selectedUser.email}</div>
-                <div style={{display:'flex',gap:5,marginTop:6}}>
-                  <span className={`badge ${selectedUser.role === 'Driver' ? 'badge-blue' : 'badge-green'}`}>{selectedUser.role}</span>
-                  <span className="badge badge-green">{selectedUser.status}</span>
-                </div>
-              </div>
-            </div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
-              <div style={{padding:10,background:'var(--bg2)',borderRadius:6}}>
-                <div style={{fontSize:11,color:'var(--text3)',marginBottom:2}}>Phone</div>
-                <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{selectedUser.phone || '—'}</div>
-              </div>
-              <div style={{padding:10,background:'var(--bg2)',borderRadius:6}}>
-                <div style={{fontSize:11,color:'var(--text3)',marginBottom:2}}>Rides Taken</div>
-                <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{selectedUser.totalRides || 0}</div>
-              </div>
-              <div style={{padding:10,background:'var(--bg2)',borderRadius:6}}>
-                <div style={{fontSize:11,color:'var(--text3)',marginBottom:2}}>Rating</div>
-                <div style={{fontSize:13,fontWeight:600,color:'var(--text)',display:'flex',alignItems:'center',gap:4}}>
-                  <span style={{width:12,height:12,display:'flex',color:'#F59E0B'}}>{I.starF}</span>
-                  {selectedUser.averageRating || '—'}
-                </div>
-              </div>
-              <div style={{padding:10,background:'var(--bg2)',borderRadius:6}}>
-                <div style={{fontSize:11,color:'var(--text3)',marginBottom:2}}>Joined</div>
-                <div style={{fontSize:13,fontWeight:600,color:'var(--text)'}}>{new Date(selectedUser.createdAt).toLocaleDateString()}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* EDIT MODAL */}
       {editModal && selectedUser && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}} onClick={()=>setEditModal(false)}>
-          <div className="card" style={{width:'90%',maxWidth:400}} onClick={(e)=>e.stopPropagation()}>
+          <div className="card" style={{width:'90%',maxWidth:560,maxHeight:'85vh',overflow:'auto'}} onClick={(e)=>e.stopPropagation()}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
               <h2 style={{fontSize:18,fontWeight:700}}>Edit User</h2>
-              <button onClick={()=>setEditModal(false)} style={{background:'none',border:'none',cursor:'pointer',fontSize:20}}>✕</button>
+              <button onClick={()=>setEditModal(false)} style={{background:'none',border:'none',cursor:'pointer',fontSize:20}}>x</button>
             </div>
-            <div style={{marginBottom:12}}>
-              <label style={{fontSize:12,color:'var(--text3)',marginBottom:4,display:'block'}}>Full Name</label>
-              <input className="input" value={editForm.fullName} onChange={(e)=>setEditForm({...editForm, fullName: e.target.value})} />
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:12}}>
+              {[
+                ['Full Name','fullName'], ['Email','email'], ['Student ID','studentId'], ['Faculty','faculty'],
+                ['Phone','phone'], ['Gender','gender'], ['University','university'], ['Campus','campusName'],
+              ].map(([label,key]) => (
+                <div key={key}>
+                  <label style={{fontSize:12,color:'var(--text3)',marginBottom:4,display:'block'}}>{label}</label>
+                  <input className="input" value={(editForm as any)[key]} onChange={(e)=>setEditForm({...editForm, [key]: e.target.value})} />
+                </div>
+              ))}
+              <div>
+                <label style={{fontSize:12,color:'var(--text3)',marginBottom:4,display:'block'}}>Role</label>
+                <select className="input" value={editForm.role} onChange={(e)=>setEditForm({...editForm, role: e.target.value})} style={{cursor:'pointer'}}>
+                  <option value="Rider">Rider</option>
+                  <option value="Driver">Driver</option>
+                  <option value="Admin">Admin</option>
+                </select>
+              </div>
             </div>
-            <div style={{marginBottom:12}}>
-              <label style={{fontSize:12,color:'var(--text3)',marginBottom:4,display:'block'}}>Phone</label>
-              <input className="input" value={editForm.phone} onChange={(e)=>setEditForm({...editForm, phone: e.target.value})} />
-            </div>
-            <div style={{marginBottom:16}}>
-              <label style={{fontSize:12,color:'var(--text3)',marginBottom:4,display:'block'}}>Role</label>
-              <select className="input" value={editForm.role} onChange={(e)=>setEditForm({...editForm, role: e.target.value})} style={{cursor:'pointer'}}>
-                <option value="Rider">Rider</option>
-                <option value="Driver">Driver</option>
-                <option value="Admin">Admin</option>
-              </select>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:8,marginBottom:16}}>
+              {[
+                ['Active','isActive'], ['ID verified','isVerified'], ['Email verified','isEmailVerified'],
+              ].map(([label,key]) => (
+                <label key={key} className="check-label" style={{margin:0}}>
+                  <input type="checkbox" checked={!!(editForm as any)[key]} onChange={(e)=>setEditForm({...editForm, [key]: e.target.checked})}/>
+                  {label}
+                </label>
+              ))}
             </div>
             <div style={{display:'flex',gap:8}}>
               <button className="btn btn-secondary btn-full" onClick={()=>setEditModal(false)}>Cancel</button>
@@ -298,7 +272,6 @@ export default function UserManagement() {
           </div>
         </div>
       )}
-
       {/* BAN MODAL */}
       {banModal && selectedUser && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',display:'flex',alignItems:'center',justifyContent:'center',zIndex:1000}} onClick={()=>setBanModal(false)}>

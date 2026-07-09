@@ -169,6 +169,7 @@ export const adminAPI = {
   getActivity:    ()                          => API.get('/api/admin/activity'),
   getUsers:       (p?: any)                   => API.get('/api/admin/users', { params: p }),
   getUser:        (id: number)                => API.get(`/api/admin/users/${id}`),
+  updateUser:     (id: number, d: any)        => API.put(`/api/admin/users/${id}`, d),
   getPending:     ()                          => API.get('/api/admin/verifications/pending'),
   approve:        (id: number)                => API.put(`/api/admin/verifications/${id}/approve`),
   reject:         (id: number, d: any)        => API.put(`/api/admin/verifications/${id}/reject`, d),

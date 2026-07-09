@@ -57,10 +57,12 @@ export default function PostRide() {
 
   const submit = async ()=>{
     if(!form.from||!form.to||!form.departureTime){toast.error('Please fill all required fields');return}
+    if(form.recurring&&form.recurringDays.length===0){toast.error('Select at least one recurring day');return}
     setLoading(true)
     try{
       await rideAPI.post({fromLocation:form.from,toLocation:form.to,fromLat:form.fromLat||null,fromLng:form.fromLng||null,toLat:form.toLat||null,toLng:form.toLng||null,departureTime:new Date(form.departureTime).toISOString(),totalSeats:form.seats,pricePerSeat:form.price,genderPreference:form.genderPref,notes:form.notes,isRecurring:form.recurring,recurringDays:form.recurringDays.join(','),distanceKm:routeInfo?.distanceKm??null,durationMin:routeInfo?.durationMin??null})
-      toast.success('Trip posted!'); router.push('/driver/rides')
+      toast.success(form.recurring?'Recurring trip posted!':'Trip posted!')
+      router.push(form.recurring?'/driver/recurring':'/driver/rides')
     }catch(e:any){toast.error(e.response?.data?.message||'Failed to post trip')}
     finally{setLoading(false)}
   }

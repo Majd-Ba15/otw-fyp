@@ -17,6 +17,13 @@ export default function DriverDashboard() {
   const [unread,   setUnread]   = useState(0)
   const [loading,  setLoading]  = useState(true)
 
+  const normalizeStats = (raw: any = {}) => ({
+    totalRides: raw.totalRides ?? raw.driverBookedRides ?? raw.driverCompletedRides ?? raw.completedRides ?? 0,
+    thisWeek: raw.thisWeek ?? raw.weekRides ?? raw.ridesThisWeek ?? 0,
+    rating: raw.rating ?? raw.averageRating ?? 0,
+    earnings: raw.earnings ?? 0,
+  })
+
   const bookedSeats = (ride: any) => {
     if (!ride) return 0
     if (typeof ride.bookedSeats === 'number') return ride.bookedSeats
@@ -39,7 +46,7 @@ export default function DriverDashboard() {
       notifAPI.getUnreadCount(),
     ]).then(([p, s, r, req, n]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
-      setStats(s.status === 'fulfilled' ? s.value.data : { totalRides:0, thisWeek:0, rating:0, earnings:0 })
+      setStats(s.status === 'fulfilled' ? normalizeStats(s.value.data) : normalizeStats())
       if (r.status === 'fulfilled') {
         const rides = r.value.data || []
         setUpcoming(rides.slice(0,3))
