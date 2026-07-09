@@ -101,8 +101,8 @@ export default function Register() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
-      <header style={{ height: 64, background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
-        <div style={{ width: 52, height: 52, background: 'white', borderRadius: 10, padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <header style={{ height: 72, background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(12px, 4vw, 24px)' }}>
+        <div style={{ width: 'clamp(56px, 14vw, 64px)', height: 'clamp(56px, 14vw, 64px)', background: 'white', borderRadius: 12, padding: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <img src="/otw.png" alt="OTW" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         <Link href="/auth/login" style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>Sign in</Link>
@@ -186,7 +186,7 @@ export default function Register() {
               {/* Role picker */}
               <div className="form-group">
                 <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)', marginBottom: 10 }}>I want to join as</div>
-                <div style={{ display: 'flex', gap: 12 }}>
+                <div className="auth-role-grid">
                   {[{ id:'Rider', icon:<RiderRoleIcon/>, name:'Rider', desc:'Search and book rides' },{ id:'Driver', icon:<DriverRoleIcon/>, name:'Driver', desc:'Post and manage rides' }].map(r => (
                     <button key={r.id} onClick={() => setForm(p => ({ ...p, role: r.id }))} style={{ flex: 1, padding: '16px 10px', borderRadius: 12, border: form.role === r.id ? '2px solid var(--green)' : '1.5px solid var(--border2)', background: form.role === r.id ? 'var(--green-l)' : 'var(--bg-card)', cursor: 'pointer', textAlign: 'center', transition: 'all .15s' }}>
                       <div style={{ width: 44, height: 44, margin: '0 auto 8px', background: form.role === r.id ? 'var(--green-l2)' : 'var(--bg2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: form.role === r.id ? 'var(--green)' : 'var(--text3)' }}>{r.icon}</div>
@@ -215,7 +215,7 @@ export default function Register() {
                 <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>Check your inbox</h2>
                 <p style={{ fontSize: 13, color: 'var(--text3)' }}>We sent a 6-digit code to<br /><strong style={{ color: 'var(--text)' }}>{form.email}</strong></p>
               </div>
-              <input className="input" maxLength={6} placeholder="000000" style={{ textAlign: 'center', fontSize: 28, letterSpacing: 12, fontWeight: 700, marginBottom: 16 }}
+              <input className="input auth-otp-input" maxLength={6} placeholder="000000"
                 value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, ''))} />
               <button className="btn btn-primary btn-full btn-lg" onClick={verifyOtp} disabled={loading || otp.length !== 6}>
                 {loading ? 'Verifying...' : 'Verify email →'}

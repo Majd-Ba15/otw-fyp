@@ -33,7 +33,7 @@ export default function Welcome() {
     <main className="welcome">
       <header style={{ position: 'sticky', top: 0, zIndex: 50, display: 'flex', alignItems: 'center', padding: '14px 32px', background: '#fff', borderBottom: '1px solid #e5e7eb' }}>
         <Link href="/" aria-label="OTW home" style={{ display: 'flex', flexDirection: 'row', flexWrap: 'nowrap', alignItems: 'center', gap: 14, textDecoration: 'none', color: '#111827' }}>
-          <span style={{ width: 72, height: 72, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 8, borderRadius: 14, background: '#fff', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
+          <span className="brand-logo" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, padding: 4, borderRadius: 16, background: '#fff', border: '1px solid #e5e7eb', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}>
             <img src="/otw.png" alt="OTW" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
           </span>
           <span style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', lineHeight: 1.15, whiteSpace: 'nowrap' }}>
@@ -52,7 +52,7 @@ export default function Welcome() {
           </h1>
 
           <p>
-            OTW connects verified university students traveling the same way. Share rides, reduce
+            OTW connects verified university students traveling the same way. Share trips, reduce
             transportation costs, and commute safely together.
           </p>
 
@@ -81,10 +81,15 @@ export default function Welcome() {
       </section>
 
       <style jsx>{`
+        .brand-logo {
+          width: 88px;
+          height: 88px;
+        }
+
         .welcome {
           width: 100%;
           min-height: 100vh;
-          background: var(--bg, #f4f5f7);
+          background: #f9fafb;
           color: var(--text, #111827);
           font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
@@ -97,6 +102,7 @@ export default function Welcome() {
           max-width: 1240px;
           margin: 0 auto;
           padding: clamp(48px, 8vh, 96px) 32px;
+          background: #f9fafb;
         }
 
         .hero-content {
@@ -109,7 +115,7 @@ export default function Welcome() {
           font-size: clamp(34px, 3.6vw, 48px);
           font-weight: 800;
           line-height: 1.15;
-          letter-spacing: -0.5px;
+          letter-spacing: 0;
         }
 
         h1 span {
@@ -178,12 +184,7 @@ export default function Welcome() {
           max-width: 480px;
           display: grid;
           grid-template-columns: repeat(2, minmax(0, 1fr));
-          gap: 14px 20px;
-          padding: 18px 20px;
-          border: 1px solid var(--border, #e5e7eb);
-          border-radius: var(--radius-lg, 12px);
-          background: var(--bg-card, #fff);
-          box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+          gap: 12px;
         }
 
         .feature {
@@ -192,6 +193,10 @@ export default function Welcome() {
           grid-template-columns: 30px minmax(0, 1fr);
           align-items: center;
           gap: 10px;
+          padding: 14px;
+          border: 1px solid var(--border, #e5e7eb);
+          border-radius: 12px;
+          background: #fff;
           color: var(--text2, #374151);
           font-size: 13px;
           font-weight: 600;
@@ -221,15 +226,13 @@ export default function Welcome() {
         }
 
         .hero-visual img {
-          /* No boxed frame, no forced aspect-ratio (that caused the empty
-             letterboxed padding) — the photo just sits at its own natural
-             proportions, capped so it never dominates the layout. */
           width: 100%;
+          max-width: 600px;
+          aspect-ratio: 3 / 2;
           height: auto;
-          max-height: 480px;
           display: block;
-          object-fit: contain;
-          border-radius: var(--radius-xl, 16px);
+          object-fit: cover;
+          border-radius: 16px;
         }
 
         @media (max-width: 980px) {
@@ -244,7 +247,7 @@ export default function Welcome() {
           }
 
           .hero-visual img {
-            max-height: 300px;
+            max-width: 600px;
           }
 
           .hero-content p {
@@ -257,6 +260,11 @@ export default function Welcome() {
         }
 
         @media (max-width: 560px) {
+          .brand-logo {
+            width: 64px;
+            height: 64px;
+          }
+
           .hero {
             padding: 24px 16px 40px;
           }
@@ -272,6 +280,10 @@ export default function Welcome() {
 
           .feature-bar {
             grid-template-columns: 1fr;
+          }
+
+          .feature {
+            padding: 12px;
           }
         }
       `}</style>

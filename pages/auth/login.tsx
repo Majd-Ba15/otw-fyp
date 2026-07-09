@@ -44,8 +44,8 @@ export default function Login() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
       {/* Green topbar */}
-      <header style={{ height: 64, background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px' }}>
-        <div style={{ width: 52, height: 52, background: 'white', borderRadius: 10, padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <header style={{ height: 72, background: 'var(--green)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 clamp(12px, 4vw, 24px)' }}>
+        <div style={{ width: 'clamp(56px, 14vw, 64px)', height: 'clamp(56px, 14vw, 64px)', background: 'white', borderRadius: 12, padding: 3, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <img src="/otw.png" alt="OTW" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
         </div>
         <Link href="/auth/register" style={{ fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>Create account</Link>
