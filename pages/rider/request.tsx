@@ -1,10 +1,18 @@
 import { useEffect, useState } from 'react'
+import dynamic from 'next/dynamic'
 import Layout, { I } from '../../components/layout/Layout'
 import { demandAPI, userAPI } from '../../services/api'
+
+const MapPicker = dynamic(() => import('../../components/shared/MapPicker'), { ssr: false })
 
 const emptyForm = {
   fromLocation: '',
   toLocation: '',
+  // Exact pickup/dropoff pins — city text above stays the matching label; these are the map coords
+  fromLat: 0,
+  fromLng: 0,
+  toLat: 0,
+  toLng: 0,
   desiredTime: '',
   earliestTime: '',
   latestTime: '',
@@ -21,6 +29,8 @@ export default function RiderRequestRide() {
   const [matches, setMatches] = useState<Record<number, any[]>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [showMapFrom, setShowMapFrom] = useState(false)
+  const [showMapTo, setShowMapTo] = useState(false)
 
   const load = async () => {
     const [p, r] = await Promise.allSettled([userAPI.getMe(), demandAPI.getMyRequests()])
@@ -38,6 +48,11 @@ export default function RiderRequestRide() {
       await demandAPI.createRequest({
         ...form,
         maxPrice: form.maxPrice ? Number(form.maxPrice) : null,
+        // Exact pins — send null when the rider didn't drop one (city text still drives matching)
+        fromLat: form.fromLat || null,
+        fromLng: form.fromLng || null,
+        toLat: form.toLat || null,
+        toLng: form.toLng || null,
         desiredTime: new Date(form.desiredTime).toISOString(),
         earliestTime: form.earliestTime ? new Date(form.earliestTime).toISOString() : null,
         latestTime: form.latestTime ? new Date(form.latestTime).toISOString() : null,
@@ -70,9 +85,27 @@ export default function RiderRequestRide() {
             <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Create trip request</h1>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-            <input className="input" placeholder="From" value={form.fromLocation} onChange={e => setForm((p: any) => ({ ...p, fromLocation: e.target.value }))} />
-            <input className="input" placeholder="To" value={form.toLocation} onChange={e => setForm((p: any) => ({ ...p, toLocation: e.target.value }))} />
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>From (city) *</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input className="input" style={{ flex: 1 }} placeholder="e.g. Beirut" value={form.fromLocation} onChange={e => setForm((p: any) => ({ ...p, fromLocation: e.target.value }))} />
+              <button className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }} onClick={() => setShowMapFrom(o => !o)}>
+                <span style={{ width: 13, height: 13, display: 'flex' }}>{I.pin}</span> Set exact pickup on map
+              </button>
+            </div>
+            {form.fromLat !== 0 && <div style={{ fontSize: 11, color: '#16a36b', marginTop: 4 }}>📍 Exact pickup pin set</div>}
+            {showMapFrom && <div style={{ marginTop: 8 }}><MapPicker label="Pickup point" onPick={(lat, lng) => { setForm((p: any) => ({ ...p, fromLat: lat, fromLng: lng })); setShowMapFrom(false) }} height={280} userUniversity={profile?.university} /></div>}
+          </div>
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>To (city) *</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <input className="input" style={{ flex: 1 }} placeholder="e.g. Tripoli" value={form.toLocation} onChange={e => setForm((p: any) => ({ ...p, toLocation: e.target.value }))} />
+              <button className="btn btn-secondary btn-sm" style={{ display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }} onClick={() => setShowMapTo(o => !o)}>
+                <span style={{ width: 13, height: 13, display: 'flex' }}>{I.pin}</span> Set exact dropoff on map
+              </button>
+            </div>
+            {form.toLat !== 0 && <div style={{ fontSize: 11, color: '#16a36b', marginTop: 4 }}>📍 Exact dropoff pin set</div>}
+            {showMapTo && <div style={{ marginTop: 8 }}><MapPicker label="Drop-off point" onPick={(lat, lng) => { setForm((p: any) => ({ ...p, toLat: lat, toLng: lng })); setShowMapTo(false) }} height={280} userUniversity={profile?.university} /></div>}
           </div>
           <div style={{ marginBottom: 10 }}>
             <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>When do you need the trip? *</div>

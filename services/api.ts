@@ -94,7 +94,10 @@ export const demandAPI = {
   createAvailability: (d: any)         => API.post('/api/demand/availability', d),
   getMyAvailability:  ()               => API.get('/api/demand/availability/mine'),
   disableAvailability:(id: number)     => API.put(`/api/demand/availability/${id}/disable`),
-  getAnalytics:       ()               => API.get('/api/demand/admin/analytics'),
+  // Admin "Unmet demand" list: open requests, each with its overlapping-available-driver count
+  getOpenDemand:      ()               => API.get('/api/demand/admin/open'),
+  // Message ONLY the drivers whose availability overlaps this request's route + time (never all drivers)
+  notifyDrivers:      (id: number)     => API.post(`/api/demand/admin/requests/${id}/notify`),
 }
 export const bookingAPI = {
   book:            (d: any)           => API.post('/api/bookings', d),
