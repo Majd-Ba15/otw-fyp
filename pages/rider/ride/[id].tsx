@@ -7,11 +7,9 @@ import UniversityBadge from '../../../components/shared/UniversityBadge'
 
 const FAV_KEY       = 'otw_favourite_rides'
 const FAV_RIDES_KEY = 'otw_favourite_ride_details'
-const WAITLIST_KEY  = 'otw_waitlist'
 
 function getFavs(): number[]   { try { return JSON.parse(localStorage.getItem(FAV_KEY) || '[]') } catch { return [] } }
 function getFavRideDetails(): any[] { try { return JSON.parse(localStorage.getItem(FAV_RIDES_KEY) || '[]') } catch { return [] } }
-function getWL(): any[]         { try { return JSON.parse(localStorage.getItem(WAITLIST_KEY) || '[]') } catch { return [] } }
 
 export default function RideDetail() {
   const router = useRouter()
@@ -20,8 +18,6 @@ export default function RideDetail() {
   const [ride,        setRide]        = useState<any>(null)
   const [profile,     setProfile]     = useState<any>(null)
   const [isFav,       setIsFav]       = useState(false)
-  const [inWaitlist,  setInWaitlist]  = useState(false)
-  const [showWLModal, setShowWLModal] = useState(false)
 
   useEffect(() => {
     if (!id) return
@@ -44,9 +40,8 @@ export default function RideDetail() {
         .catch(() => {})
     }
 
-    // Check local favorites + waitlist
+    // Check local favorites
     setIsFav(getFavs().includes(Number(id)))
-    setInWaitlist(getWL().some((w: any) => String(w.rideId) === String(id)))
   }, [id])
 
   const toggleFav = async () => {
@@ -76,28 +71,6 @@ export default function RideDetail() {
       setIsFav(true)
       toast.success('Added to favourites!')
     }
-  }
-
-  const addToWaitlist = () => {
-    const wl  = getWL()
-    const rideId = Number(id)
-    if (wl.some((w: any) => String(w.rideId) === String(rideId))) {
-      toast('Already on your waitlist')
-      return
-    }
-    const entry = {
-      rideId,
-      fromLocation: ride?.fromLocation,
-      toLocation:   ride?.toLocation,
-      departureTime:ride?.departureTime,
-      pricePerSeat: ride?.pricePerSeat,
-      driver:       ride?.driver?.fullName,
-      addedAt:      new Date().toISOString(),
-    }
-    localStorage.setItem(WAITLIST_KEY, JSON.stringify([...wl, entry]))
-    setInWaitlist(true)
-    setShowWLModal(false)
-    toast.success('Added to waitlist! We\'ll notify you if a seat opens.')
   }
 
   const book = () => {
@@ -149,7 +122,7 @@ export default function RideDetail() {
         {isFull && (
           <div className="notice notice-amber" style={{ marginBottom: 12 }}>
             <span style={{ width: 16, height: 16, display: 'flex', flexShrink: 0 }}>{I.users}</span>
-            <div><div style={{ fontWeight: 600 }}>This ride is full</div><div>You can add yourself to the waitlist to be notified if a seat opens.</div></div>
+            <div><div style={{ fontWeight: 600 }}>This ride is full</div><div>Request a ride on this route instead — matching drivers will be notified.</div></div>
           </div>
         )}
 
@@ -275,7 +248,7 @@ export default function RideDetail() {
           </div>
         )}
 
-        {/* Primary action: Book OR Waitlist */}
+        {/* Primary action: Book OR Request a ride when full */}
         {isFull ? (
           <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
             <button
@@ -287,11 +260,10 @@ export default function RideDetail() {
             </button>
             <button
               className="btn btn-primary btn-full btn-lg"
-              onClick={() => setShowWLModal(true)}
-              disabled={inWaitlist}
+              onClick={() => router.push('/rider/request')}
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <span style={{ width: 16, height: 16, display: 'flex' }}>{I.clock}</span>
-              {inWaitlist ? 'On waitlist ✓' : 'Join waitlist'}
+              <span style={{ width: 16, height: 16, display: 'flex' }}>{I.send}</span>
+              Request a ride
             </button>
           </div>
         ) : (
@@ -300,29 +272,6 @@ export default function RideDetail() {
           </button>
         )}
       </div>
-
-      {/* Waitlist confirmation modal */}
-      {showWLModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
-          onClick={e => { if (e.target === e.currentTarget) setShowWLModal(false) }}>
-          <div style={{ background: 'var(--bg-card)', borderRadius: '16px 16px 0 0', padding: 24, width: '100%', maxWidth: 520 }}>
-            <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>Join waitlist</div>
-            <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 16, lineHeight: 1.5 }}>
-              We'll notify you immediately if a seat becomes available on this ride.
-            </div>
-            <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px', marginBottom: 20, fontSize: 13 }}>
-              <div style={{ fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>{ride.fromLocation} → {ride.toLocation}</div>
-              <div style={{ color: 'var(--text3)' }}>
-                {new Date(ride.departureTime).toLocaleString('en', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
-              </div>
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowWLModal(false)}>Cancel</button>
-              <button className="btn btn-primary" style={{ flex: 2 }} onClick={addToWaitlist}>Confirm — join waitlist</button>
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   )
 }

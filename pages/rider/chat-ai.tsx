@@ -12,7 +12,7 @@ export default function RiderChatAI() {
   const [unread,   setUnread]   = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const quickQs = ['How do I book?','Cancel booking?','How to pay?','Waitlist?','Is it safe?']
+  const quickQs = ['How do I book?','Cancel booking?','How to pay?','Request a ride?','Is it safe?']
 
   useEffect(() => {
     Promise.allSettled([

@@ -53,7 +53,7 @@ export default function Analytics() {
         openRequests: 6, fulfilledRequests: 11, requestsWindow: 19,
         ridesPerDay: Array.from({ length: 7 }, (_, i) => ({ date: new Date(Date.now() - (6 - i) * 86400000).toISOString(), count: [32, 28, 42, 18, 38, 12, 9][i] })),
         topRoutes: [{ fromLocation: 'Beirut', toLocation: 'Tripoli', count: 124 }, { fromLocation: 'Hamra', toLocation: 'Baabda', count: 89 }, { fromLocation: 'Sidon', toLocation: 'Beirut', count: 65 }],
-        waitlistDemand: [{ fromLocation: 'Beirut', toLocation: 'Zahle', waiting: 14 }, { fromLocation: 'Hamra', toLocation: 'Jounieh', waiting: 8 }],
+        unmetDemand: [{ fromLocation: 'Beirut', toLocation: 'Zahle', count: 14 }, { fromLocation: 'Hamra', toLocation: 'Jounieh', count: 8 }],
         funnel: [{ status: 'Pending', count: 24 }, { status: 'Confirmed', count: 61 }, { status: 'Completed', count: 48 }, { status: 'Declined', count: 12 }, { status: 'Cancelled', count: 9 }],
         slots: [
           { dow: 4, hour: 18, supply: 2, demand: 12, gap: 10 }, { dow: 4, hour: 20, supply: 14, demand: 4, gap: -10 },
@@ -98,7 +98,7 @@ export default function Analytics() {
     ])
     add('Rides per day', ['date', 'count'], (raw.ridesPerDay || []).map((d: any) => [new Date(d.date).toISOString().slice(0, 10), d.count]))
     add('Top routes', ['from', 'to', 'count'], (raw.topRoutes || []).map((r: any) => [r.fromLocation, r.toLocation, r.count]))
-    add('Waitlist demand', ['from', 'to', 'waiting'], (raw.waitlistDemand || []).map((r: any) => [r.fromLocation, r.toLocation, r.waiting]))
+    add('Unmet demand (open requests)', ['from', 'to', 'requests'], (raw.unmetDemand || []).map((r: any) => [r.fromLocation, r.toLocation, r.count]))
     add('Supply vs demand (day x hour)', ['day', 'hour', 'supply', 'demand', 'gap'], (raw.slots || []).map((s: any) => [DOW[s.dow], s.hour, s.supply, s.demand, s.gap]))
     add('Booking funnel', ['status', 'count'], (raw.funnel || []).map((f: any) => [f.status, f.count]))
     const blob = new Blob([lines.join('\n')], { type: 'text/csv' })
@@ -318,7 +318,7 @@ export default function Analytics() {
               </div>
             </div>
 
-            {/* ── Top routes + Waitlist demand ── */}
+            {/* ── Top routes + Unmet demand ── */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginBottom: 14 }}>
               <div className="card" style={{ margin: 0 }}>
                 <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>Top routes ({raw.days}d)</div>
@@ -331,12 +331,12 @@ export default function Analytics() {
                 ))}
               </div>
               <div className="card" style={{ margin: 0, border: '1px solid var(--amber, #F59E0B)' }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>🔥 Waitlisted routes — need drivers</div>
-                {(raw.waitlistDemand || []).length === 0 && <div style={{ fontSize: 12, color: 'var(--text3)' }}>No unmet waitlist demand — supply covers demand</div>}
-                {(raw.waitlistDemand || []).map((r: any, i: number) => (
+                <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>🔥 Routes needing drivers — open ride requests</div>
+                {(raw.unmetDemand || []).length === 0 && <div style={{ fontSize: 12, color: 'var(--text3)' }}>No unmet demand — supply covers rider requests</div>}
+                {(raw.unmetDemand || []).map((r: any, i: number) => (
                   <div key={i} className="row">
                     <span style={{ fontSize: 13, color: 'var(--text2)' }}>{r.fromLocation} → {r.toLocation}</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#A66A00' }}>{r.waiting} waiting</span>
+                    <span style={{ fontSize: 13, fontWeight: 700, color: '#A66A00' }}>{r.count} request{r.count === 1 ? '' : 's'}</span>
                   </div>
                 ))}
               </div>

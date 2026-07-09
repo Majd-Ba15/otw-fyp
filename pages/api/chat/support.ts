@@ -16,7 +16,7 @@ About OTW:
 
 Key features:
 - DRIVERS: Post rides (with a real road-route preview and distance), set route/time/seats/price, accept or decline booking requests, add multiple stops (up to 6), set recurring schedules, publish free-time AVAILABILITY slots, accept rider RIDE REQUESTS (accepting instantly creates the ride and books the rider), rate riders, manage active rides with live GPS, view earnings
-- RIDERS: Search rides by route and date, book seats, join the waitlist if full, create a RIDE REQUEST when no ride exists (pick route, time, seats, max price — matching available drivers are notified), rate drivers, cancel bookings, view history, save favourite routes
+- RIDERS: Search rides by route and date, book seats, create a RIDE REQUEST when no ride exists or a ride is full (pick route, time, seats, max price — matching available drivers are notified), rate drivers, cancel bookings, view history, save favourite routes
 - BOTH: In-app chat between driver and rider, SOS emergency button on active rides, notifications, reports for bad behaviour
 
 How things work:
@@ -27,7 +27,7 @@ How things work:
 5. Active ride: driver starts ride → real-time GPS map shown → driver ends ride → both rate each other
 6. Recurring rides: driver enables recurring when posting → picks days (Mon–Sun) → repeats automatically
 7. Multiple stops: driver adds stops to a posted ride → stops appear on the rider's search cards, map and ride details
-8. Waitlist: full rides allow waitlist sign-up → auto-promoted when a seat opens
+8. Full rides: when a ride has no seats left, the rider creates a ride request on that route instead → matching drivers get notified
 9. Expired rides: rides whose time has passed without starting are marked Expired and hidden from search
 10. Reports: users can report safety issues → admin reviews → can warn/suspend/ban users
 11. Admin panel: verifies documents, manages users/rides/reports, analytics with supply-vs-demand planning by weekday and hour

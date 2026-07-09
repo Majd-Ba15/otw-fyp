@@ -8,7 +8,6 @@ import { jwtDecode } from 'jwt-decode'
 const TYPE_META: Record<string, { icon: any; color: string; label: string }> = {
   booking:     { icon: null, color: 'var(--green)',  label: 'Booking' },
   message:     { icon: null, color: 'var(--blue)',   label: 'Message' },
-  waitlist:    { icon: null, color: 'var(--amber)',  label: 'Waitlist' },
   reminder:    { icon: null, color: 'var(--blue)',   label: 'Reminder' },
   rating:      { icon: null, color: '#F59E0B',       label: 'Rating' },
   system:      { icon: null, color: 'var(--text3)',  label: 'System' },
@@ -22,7 +21,6 @@ const RIDER_TRIGGER = [
   { icon: '❌', color: 'var(--red)',   text: 'Driver declined booking' },
   { icon: '🕐', color: 'var(--blue)',  text: 'Ride starting in 1 hour' },
   { icon: '💬', color: 'var(--blue)',  text: 'New message from driver' },
-  { icon: '⏳', color: 'var(--amber)', text: 'Waitlist seat opened' },
   { icon: '⭐', color: '#F59E0B',      text: 'Rate your completed ride' },
 ]
 const DRIVER_TRIGGER = [
@@ -52,7 +50,7 @@ export default function Notifications() {
   const [profile,  setProfile]  = useState<any>(null)
   const [role,     setRole]     = useState<'Rider'|'Driver'|'Admin'>('Rider')
   const [notifs,   setNotifs]   = useState<any[]>([])
-  const [settings, setSettings] = useState({ bookings:true, messages:true, reminders:true, waitlist:true })
+  const [settings, setSettings] = useState({ bookings:true, messages:true, reminders:true })
   const [loading,  setLoading]  = useState(true)
   const [filter,   setFilter]   = useState<'all'|'unread'>('all')
 
@@ -86,7 +84,7 @@ export default function Notifications() {
 
   const notifColor = (type: string) => TYPE_META[type]?.color || 'var(--text3)'
   const notifIcon  = (type: string) => {
-    const icons: Record<string,any> = { booking: I.checkC, request: I.bell, message: I.msg, waitlist: I.clock, reminder: I.clock, rating: I.star, system: I.info, verification: I.shield, cancelled: I.x }
+    const icons: Record<string,any> = { booking: I.checkC, request: I.bell, message: I.msg, reminder: I.clock, rating: I.star, system: I.info, verification: I.shield, cancelled: I.x }
     return icons[type] || I.bell
   }
   const fmtTime = (iso: string) => {
@@ -201,7 +199,7 @@ export default function Notifications() {
               {(Object.entries(settings) as [keyof typeof settings, boolean][]).map(([key, val], i, arr) => (
                 <div key={key} style={{ display:'flex', alignItems:'center', gap:12, padding:'13px 16px', borderBottom: i < arr.length-1 ? '1px solid var(--border)' : 'none' }}>
                   <span style={{ flex:1, fontSize:13, color:'var(--text)' }}>
-                    {key==='bookings' ? 'Booking confirmations' : key==='messages' ? 'New messages' : key==='reminders' ? 'Ride reminders' : 'Waitlist updates'}
+                    {key==='bookings' ? 'Booking confirmations' : key==='messages' ? 'New messages' : 'Ride reminders'}
                   </span>
                   <button className={`toggle ${val?'on':''}`} onClick={() => setSettings(p => ({...p,[key]:!val}))} aria-label={key} />
                 </div>

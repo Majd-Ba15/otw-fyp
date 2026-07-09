@@ -95,7 +95,6 @@ const RIDER_NAV = [
   { path:'/rider/ride/active',  icon:'wifi',    label:'Active ride' },
   { section: 'My trips' },
   { path:'/rider/history',      icon:'history', label:'History' },
-  { path:'/rider/waitlist',     icon:'clock',   label:'Waitlist' },
   { path:'/rider/favourites',   icon:'heart',   label:'Favourites' },
   { section: 'Account' },
   { path:'/rider/profile',      icon:'user',    label:'Profile' },

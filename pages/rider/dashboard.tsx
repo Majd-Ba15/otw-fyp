@@ -96,7 +96,7 @@ export default function RiderDashboard() {
           {[
             {icon:I.search,label:'Search',    href:'/rider/search'},
             {icon:I.heart, label:'Favourites',href:'/rider/favourites'},
-            {icon:I.clock, label:'Waitlist',  href:'/rider/waitlist'},
+            {icon:I.send,  label:'Request',   href:'/rider/request'},
             {icon:I.robot, label:'AI help',   href:'/rider/chat-ai'},
           ].map(q => (
             <Link key={q.label} href={q.href} style={{textDecoration:'none'}}>

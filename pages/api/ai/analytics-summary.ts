@@ -14,7 +14,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const prompt = `You are the analytics assistant of a university carpooling platform.
 Analyse the data and find what is NOT obvious: the single biggest anomaly or supply-demand gap.
-"slots" contains per day-of-week and hour {dow: 0=Sunday..6=Saturday, hour, supply: rides posted, demand: ride requests + waitlist, gap} — a positive gap means unmet rider demand at that day+hour; name the weekday in your answer.
+"slots" contains per day-of-week and hour {dow: 0=Sunday..6=Saturday, hour, supply: rides posted, demand: ride requests, gap} — a positive gap means unmet rider demand at that day+hour; name the weekday in your answer.
 Prev-window fields (newUsersPrev, ridesPrev, volumePrev, utilizationPrev) allow week-over-week comparison.
 
 Data: ${JSON.stringify(data).slice(0, 6000)}
