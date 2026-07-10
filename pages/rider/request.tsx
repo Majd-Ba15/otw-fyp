@@ -111,7 +111,7 @@ export default function RiderRequestRide() {
             <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>When do you need the trip? *</div>
             <input className="input" type="datetime-local" value={form.desiredTime} onChange={e => setForm((p: any) => ({ ...p, desiredTime: e.target.value }))} />
             <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
-              Drivers available within ±30 minutes of this time will be matched automatically.
+              Drivers with posted availability around this time will be matched automatically.
             </div>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
@@ -144,14 +144,17 @@ export default function RiderRequestRide() {
               </div>
               <span className="badge badge-green">{r.status}</span>
             </div>
-            {r.matchedDriver && <div style={{ fontSize: 13, color: 'var(--green)', marginBottom: 8 }}>Driver interested: {r.matchedDriver.fullName}</div>}
+            {r.matchedDriver && <div style={{ fontSize: 13, color: 'var(--green)', marginBottom: 8 }}>Available driver interested: {r.matchedDriver.fullName}</div>}
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary btn-sm" onClick={() => loadMatches(r.rideRequestId)}>View free drivers</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => loadMatches(r.rideRequestId)}>View available drivers</button>
               {r.status !== 'Closed' && <button className="btn btn-secondary btn-sm" onClick={() => closeRequest(r.rideRequestId)}>Close</button>}
             </div>
             {(matches[r.rideRequestId] || []).map((m: any) => (
               <div key={m.driverAvailabilityId} style={{ marginTop: 10, padding: 10, border: '1px solid var(--border)', borderRadius: 8 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{m.driver?.fullName || 'Driver'} - {m.fromLocation} to {m.toLocation}</div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{m.driver?.fullName || 'Driver'} - {m.fromLocation} to {m.toLocation}</div>
+                  <span className="badge badge-green">Available match</span>
+                </div>
                 <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 3 }}>{new Date(m.availableFrom).toLocaleString()} to {new Date(m.availableTo).toLocaleTimeString()}</div>
               </div>
             ))}

@@ -9,7 +9,6 @@ import { jwtDecode } from 'jwt-decode'
 export default function DriverDashboard() {
   const router = useRouter()
   const [profile,  setProfile]  = useState<any>(null)
-  const [online,   setOnline]   = useState(true)
   const [stats,    setStats]    = useState<any>({ totalRides:0, thisWeek:0, rating:0, earnings:0 })
   const [upcoming, setUpcoming] = useState<any[]>([])
   const [requests, setRequests] = useState<any[]>([])
@@ -68,11 +67,6 @@ export default function DriverDashboard() {
     })
   }, [])
 
-  const toggleOnline = async () => {
-    try { await userAPI.toggleAvailability() } catch {}
-    setOnline(o => !o)
-  }
-
   const acceptRequest = async (bookingId:number) => {
     try { await bookingAPI.accept(bookingId) } catch {}
     setRequests(p => p.filter(r => r.bookingId !== bookingId))
@@ -89,15 +83,11 @@ export default function DriverDashboard() {
     <Layout role="Driver" userInitials={initials} userName={profile?.fullName} unreadCount={unread}>
       <div className="page-inner">
 
-        {/* Header + online toggle */}
+        {/* Header */}
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:20}}>
           <div>
             <h1 style={{fontSize:22,fontWeight:700,color:'var(--text)'}}>Welcome back, {firstName}!</h1>
             <p style={{fontSize:13,color:'var(--text3)',marginTop:2}}>Ready to drive today?</p>
-          </div>
-          <div style={{display:'flex',alignItems:'center',gap:8}}>
-            <span style={{fontSize:13,color:online?'var(--green)':'var(--text3)',fontWeight:500}}>{online?'Online':'Offline'}</span>
-            <button className={`toggle ${online?'on':''}`} onClick={toggleOnline} aria-label="Toggle online"/>
           </div>
         </div>
 

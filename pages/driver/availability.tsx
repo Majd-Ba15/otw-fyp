@@ -160,7 +160,7 @@ export default function DriverAvailability() {
                     <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{r.fromLocation} to {r.toLocation}</div>
                     <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>{new Date(r.desiredTime).toLocaleString()} - {r.seatsNeeded} seat{r.seatsNeeded > 1 ? 's' : ''}</div>
                   </div>
-                  <span className="badge badge-green">{r.status}</span>
+                  <span className="badge badge-green">Available match</span>
                 </div>
                 <div style={{ fontSize: 13, color: 'var(--text2)', marginTop: 8 }}>Rider: {r.rider?.fullName || 'Rider'}</div>
                 <button className="btn btn-primary btn-sm" style={{ marginTop: 10 }} onClick={() => accept(r.rideRequestId)}>Accept request</button>

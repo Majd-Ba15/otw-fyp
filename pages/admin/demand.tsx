@@ -19,6 +19,7 @@ export default function AdminDemandPlanning() {
   const [loading, setLoading] = useState(true)
   // Request ids in their 60s post-notify cooldown (button disabled)
   const [cooldown, setCooldown] = useState<Record<number, boolean>>({})
+  const [notified, setNotified] = useState<Record<number, boolean>>({})
 
   const load = async () => {
     const [p, d, n] = await Promise.allSettled([
@@ -32,7 +33,10 @@ export default function AdminDemandPlanning() {
     setLoading(false)
   }
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    try { setNotified(JSON.parse(localStorage.getItem('otw_demand_notified') || '{}')) } catch {}
+  }, [])
 
   const notify = async (r: any) => {
     const id = r.requestId
@@ -42,12 +46,17 @@ export default function AdminDemandPlanning() {
     try {
       await demandAPI.notifyDrivers(id)
       toast.success(`Notified ${count} driver${count > 1 ? 's' : ''}`)
+      setNotified(prev => {
+        const next = { ...prev, [id]: true }
+        try { localStorage.setItem('otw_demand_notified', JSON.stringify(next)) } catch {}
+        return next
+      })
     } catch (e: any) {
       toast.error(e.response?.data?.message || 'Could not notify drivers')
       setCooldown(c => ({ ...c, [id]: false }))   // failed — let admin retry immediately
       return
     }
-    // Keep the button disabled for 60s to avoid spamming the same drivers
+    // Keep cooldown as a fallback while the one-time notify state is saved locally.
     setTimeout(() => setCooldown(c => ({ ...c, [id]: false })), 60000)
   }
 
@@ -59,7 +68,7 @@ export default function AdminDemandPlanning() {
       <div className="page-inner">
         <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Unmet demand</h1>
         <div style={{ fontSize: 13, color: 'var(--text3)', marginBottom: 16 }}>
-          Rider requests no driver has accepted yet. Notify available drivers to fill the gap.
+          Rider requests no driver has accepted yet. Matching drivers can see them from Availability; admin can send one email reminder.
         </div>
 
         {loading ? (
@@ -75,7 +84,8 @@ export default function AdminDemandPlanning() {
 
             {requests.map((r: any) => {
               const count = r.availableDriverCount || 0
-              const disabled = count === 0 || !!cooldown[r.requestId]
+              const alreadyNotified = !!notified[r.requestId]
+              const disabled = count === 0 || !!cooldown[r.requestId] || alreadyNotified
               return (
                 <div key={r.requestId} className="card" style={{ marginBottom: 10 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
@@ -97,7 +107,7 @@ export default function AdminDemandPlanning() {
                       disabled={disabled}
                       onClick={() => notify(r)}
                       style={{ whiteSpace: 'nowrap', opacity: disabled ? 0.5 : 1 }}>
-                      {count > 0 ? `Notify ${count} driver${count > 1 ? 's' : ''}` : 'No drivers to notify'}
+                      {alreadyNotified ? 'Already notified' : count > 0 ? `Notify ${count} driver${count > 1 ? 's' : ''}` : 'No drivers to notify'}
                     </button>
                   </div>
                 </div>
@@ -105,8 +115,8 @@ export default function AdminDemandPlanning() {
             })}
 
             <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 12, lineHeight: 1.6 }}>
-              When you tap Notify, only drivers whose availability overlaps that route and time are messaged — never all
-              drivers. Rows with no available driver are an honest supply gap.
+              Drivers with matching posted availability can see rider requests on the Availability page.
+              Admin Notify sends one extra email reminder only to those matching drivers, never to all drivers.
             </div>
           </>
         )}
