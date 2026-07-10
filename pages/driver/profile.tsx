@@ -96,7 +96,7 @@ export default function DriverProfile() {
         {/* Stats */}
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:12}}>
           {[
-            {val:stats?.driverCompletedRides ?? 0,                      label:'Rides completed'},
+            {val:stats?.totalRides ?? 0,                                label:'Rides confirmed'},
             {val:Number(stats?.averageRating || 0).toFixed(1),          label:'Rating'},
             {val:`$${Number(stats?.earnings || 0).toFixed(0)}`,         label:'Earned'},
           ].map((s,i) => (

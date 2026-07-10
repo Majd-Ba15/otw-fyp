@@ -59,8 +59,8 @@ export default function Earnings() {
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:10,marginBottom:16}}>
           {[
             {val:`$${week.toFixed(2)}`,               label:'This week'},
-            {val:stats?.driverCompletedRides ?? 0,    label:'Rides completed'},
-            {val:transactions.length,                 label:'Paid bookings'},
+            {val:stats?.totalRides ?? 0,              label:'Rides confirmed'},
+            {val:transactions.length,                 label:'Confirmed bookings'},
           ].map((s,i) => (
             <div key={i} className="stat-card" style={{textAlign:'center'}}>
               <div style={{fontSize:18,fontWeight:700,color:'var(--text)'}}>{s.val}</div>
