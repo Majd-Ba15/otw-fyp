@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Layout, { I } from '../components/layout/Layout'
-import { userAPI, bookingAPI, notifAPI } from '../services/api'
+import { userAPI, bookingAPI, notifAPI, sosAPI } from '../services/api'
 import Cookies from 'js-cookie'
 import { jwtDecode } from 'jwt-decode'
 import toast from 'react-hot-toast'
@@ -11,7 +11,7 @@ export default function SOS() {
   const [profile,   setProfile]   = useState<any>(null)
   const [role,      setRole]      = useState<'Rider'|'Driver'>('Rider')
   const [booking,   setBooking]   = useState<any>(null)
-  const [contacts,  setContacts]  = useState<{name:string;phone:string}[]>([])
+  const [contacts,  setContacts]  = useState<{name:string;phone:string;email?:string}[]>([])
   const [holding,   setHolding]   = useState(false)
   const [progress,  setProgress]  = useState(0)
   const [activated, setActivated] = useState(false)
@@ -47,6 +47,44 @@ export default function SOS() {
     return () => clearInterval(holdTimer)
   }, [])
 
+  // Email every trusted contact that has an email address. mapsUrl is null when
+  // we couldn't get GPS — the backend then sends a "need help, in danger" message.
+  const dispatchAlerts = async (mapsUrl: string | null) => {
+    const recipients = contacts.filter(c => c.email)
+    if (recipients.length === 0) {
+      toast.error('Add an email to a trusted contact so they can be alerted (tap Edit below).')
+      return
+    }
+    const fromName = profile?.fullName || 'An OTW user'
+    const t = toast.loading('Sending emergency alert…')
+    try {
+      await Promise.all(recipients.map(c =>
+        sosAPI.sendAlert({ toEmail: c.email!, toName: c.name, fromName, mapsUrl })
+      ))
+      toast.dismiss(t)
+      toast.success(
+        mapsUrl
+          ? `Live location emailed to ${recipients.length} contact${recipients.length > 1 ? 's' : ''}`
+          : `Alert emailed: “I need help — I'm in danger”`,
+        { duration: 6000 }
+      )
+    } catch {
+      toast.dismiss(t)
+      toast.error('Could not send the email alert. Please call your contacts directly.', { duration: 6000 })
+    }
+  }
+
+  // Get GPS, then email the alert. Falls back to no-location if GPS is denied/unavailable.
+  const sendLocationAlert = () => {
+    const finish = (mapsUrl: string | null) => dispatchAlerts(mapsUrl)
+    if (typeof navigator === 'undefined' || !navigator.geolocation) { finish(null); return }
+    navigator.geolocation.getCurrentPosition(
+      pos => finish(`https://www.google.com/maps?q=${pos.coords.latitude},${pos.coords.longitude}`),
+      ()  => finish(null),
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+    )
+  }
+
   const startHold = () => {
     if (activated) return
     setHolding(true)
@@ -58,7 +96,7 @@ export default function SOS() {
         clearInterval(holdTimer)
         setActivated(true)
         setHolding(false)
-        toast.error('🚨 SOS ACTIVATED — Emergency contacts notified with your live location!', { duration:6000 })
+        sendLocationAlert()
       }
     }, 100)
   }
@@ -70,10 +108,10 @@ export default function SOS() {
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'AK'
 
   const quickActions = [
-    { icon:I.phone, number:'112', title:'Police Emergency',       desc:'Lebanese Internal Security Forces — dial in any emergency', bg:'#FEE2E2', color:'#DC2626' },
-    { icon:I.phone, number:'140', title:'Lebanese Red Cross',     desc:'Medical emergencies & ambulance service across Lebanon',    bg:'#FEE2E2', color:'#DC2626' },
-    { icon:I.share, number:null,  title:'Share live location',    desc:'Send your GPS location to all trusted contacts right now',  bg:'#EFF6FF', color:'#2563EB' },
-    { icon:I.pin,   number:null,  title:'Nearest safe place',     desc:'Find police stations, hospitals & Red Cross centres nearby',bg:'#F0FDF4', color:'#16A34A' },
+    { icon:I.phone, number:'112', title:'Police Emergency',       desc:'Lebanese Internal Security Forces — dial in any emergency', bg:'#FEE2E2', color:'#DC2626', onClick: undefined as (undefined | (() => void)) },
+    { icon:I.phone, number:'140', title:'Lebanese Red Cross',     desc:'Medical emergencies & ambulance service across Lebanon',    bg:'#FEE2E2', color:'#DC2626', onClick: undefined as (undefined | (() => void)) },
+    { icon:I.share, number:null,  title:'Share live location',    desc:'Email your GPS location to all trusted contacts right now', bg:'#EFF6FF', color:'#2563EB', onClick: sendLocationAlert },
+    { icon:I.pin,   number:null,  title:'Nearest safe place',     desc:'Find police stations, hospitals & Red Cross centres nearby',bg:'#F0FDF4', color:'#16A34A', onClick: undefined as (undefined | (() => void)) },
   ]
 
   return (
@@ -107,7 +145,10 @@ export default function SOS() {
           <div style={{fontSize:15,fontWeight:600,color:'var(--text)',marginBottom:14}}>Emergency numbers & actions</div>
           <div style={{display:'flex',flexDirection:'column',gap:10}}>
             {quickActions.map((a,i) => (
-              <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:10,background:a.bg}}>
+              <div key={i} onClick={a.onClick}
+                role={a.onClick ? 'button' : undefined} tabIndex={a.onClick ? 0 : undefined}
+                onKeyDown={a.onClick ? (e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); a.onClick!() } }) : undefined}
+                style={{display:'flex',alignItems:'center',gap:12,padding:'12px 14px',borderRadius:10,background:a.bg,cursor:a.onClick?'pointer':'default'}}>
                 <div style={{width:42,height:42,borderRadius:10,background:a.color,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                   <span style={{width:18,height:18,color:'white',display:'flex'}}>{a.icon}</span>
                 </div>
@@ -158,14 +199,16 @@ export default function SOS() {
                 <div style={{width:32,height:32,borderRadius:'50%',background:'var(--red-l)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
                   <span style={{fontSize:11,fontWeight:700,color:'var(--red)'}}>{c.name.slice(0,2).toUpperCase()}</span>
                 </div>
-                <div>
+                <div style={{minWidth:0}}>
                   <div style={{fontSize:13,fontWeight:500,color:'var(--text)'}}>{c.name}</div>
                   <div style={{fontSize:12,color:'var(--text3)'}}>{c.phone}</div>
                 </div>
               </div>
-              <a href={`tel:${c.phone}`} style={{width:32,height:32,borderRadius:'50%',background:'var(--green-l)',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                <span style={{width:15,height:15,color:'var(--green)',display:'flex'}}>{I.phone}</span>
-              </a>
+              {c.email
+                ? <span style={{fontSize:12,color:'var(--text3)',display:'flex',alignItems:'center',gap:5,maxWidth:180,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                    <span style={{width:14,height:14,color:'var(--text4)',display:'flex',flexShrink:0}}>{I.mail}</span>{c.email}
+                  </span>
+                : <span style={{fontSize:11,color:'var(--amber)'}}>No email</span>}
             </div>
           ))}
         </div>

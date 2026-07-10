@@ -151,6 +151,13 @@ export const notifAPI = {
   readAll:     ()                     => API.put('/api/notifications/read-all'),
   markRead:    (id: number)           => API.put(`/api/notifications/${id}/read`),
 }
+export const sosAPI = {
+  // Emails one trusted contact via the backend MailKit sender.
+  // { toEmail, toName, fromName, mapsUrl }  — mapsUrl is null when live location
+  // couldn't be obtained (backend then sends a "need help, in danger" message).
+  sendAlert:   (d: { toEmail: string; toName: string; fromName: string; mapsUrl: string | null }) =>
+                 API.post('/api/sos/alert', d),
+}
 export const reportAPI = {
   file:        (d: any)               => API.post('/api/reports', d),
   getMine:     ()                     => API.get('/api/reports/mine'),

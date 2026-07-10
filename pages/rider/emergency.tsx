@@ -3,16 +3,16 @@ import Layout, { I } from '../../components/layout/Layout'
 import { userAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 
-interface Contact { name: string; phone: string }
+interface Contact { name: string; phone: string; email?: string }
 
 export default function RiderEmergency() {
   const [profile,     setProfile]     = useState<any>(null)
   const [contacts,    setContacts]    = useState<Contact[]>([])
   const [loading,     setLoading]     = useState(true)
   const [editingIdx,  setEditingIdx]  = useState<number | null>(null)
-  const [editForm,    setEditForm]    = useState<Contact>({ name: '', phone: '' })
+  const [editForm,    setEditForm]    = useState<Contact>({ name: '', phone: '', email: '' })
   const [addingNew,   setAddingNew]   = useState(false)
-  const [newForm,     setNewForm]     = useState<Contact>({ name: '', phone: '' })
+  const [newForm,     setNewForm]     = useState<Contact>({ name: '', phone: '', email: '' })
   const [saving,      setSaving]      = useState(false)
 
   const LOCAL_KEY = 'otw_emergency_contacts'
@@ -84,7 +84,7 @@ export default function RiderEmergency() {
     if (contacts.length >= 3) { toast.error('Maximum 3 contacts allowed'); return }
     const updated = [...contacts, { ...newForm }]
     const ok = await persistContacts(updated)
-    if (ok) { setAddingNew(false); setNewForm({ name: '', phone: '' }); toast.success('Contact added!') }
+    if (ok) { setAddingNew(false); setNewForm({ name: '', phone: '', email: '' }); toast.success('Contact added!') }
   }
 
   const initials = profile?.fullName?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || 'AK'
@@ -135,12 +135,20 @@ export default function RiderEmergency() {
                           value={editForm.name} onChange={e => setEditForm(p => ({ ...p, name: e.target.value }))} autoFocus />
                       </div>
                     </div>
-                    <div style={{ marginBottom: 14 }}>
+                    <div style={{ marginBottom: 10 }}>
                       <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>Phone number</div>
                       <div style={{ position: 'relative' }}>
                         <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: 'var(--text3)', display: 'flex' }}>{I.phone}</span>
                         <input className="input" style={{ paddingLeft: 32 }} placeholder="+961 XX XXX XXX" type="tel"
-                          value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))}
+                          value={editForm.phone} onChange={e => setEditForm(p => ({ ...p, phone: e.target.value }))} />
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>Email <span style={{ color: 'var(--text4)' }}>— for SOS location alerts</span></div>
+                      <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: 'var(--text3)', display: 'flex' }}>{I.mail}</span>
+                        <input className="input" style={{ paddingLeft: 32 }} placeholder="name@example.com" type="email"
+                          value={editForm.email || ''} onChange={e => setEditForm(p => ({ ...p, email: e.target.value }))}
                           onKeyDown={e => e.key === 'Enter' && saveEdit()} />
                       </div>
                     </div>
@@ -157,14 +165,11 @@ export default function RiderEmergency() {
                     <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--red-l)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                       <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--red)' }}>{c.name.slice(0, 2).toUpperCase()}</span>
                     </div>
-                    <div style={{ flex: 1 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{c.name}</div>
                       <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 1 }}>{c.phone}</div>
+                      {c.email && <div style={{ fontSize: 12, color: 'var(--text4)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.email}</div>}
                     </div>
-                    <a href={`tel:${c.phone}`} style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--green-l)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                      onClick={e => e.stopPropagation()}>
-                      <span style={{ width: 15, height: 15, color: 'var(--green)', display: 'flex' }}>{I.phone}</span>
-                    </a>
                     <button style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg2)', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                       onClick={() => startEdit(i)}>
                       <span style={{ width: 14, height: 14, color: 'var(--text3)', display: 'flex' }}>{I.edit}</span>
@@ -190,17 +195,25 @@ export default function RiderEmergency() {
                       value={newForm.name} onChange={e => setNewForm(p => ({ ...p, name: e.target.value }))} autoFocus />
                   </div>
                 </div>
-                <div style={{ marginBottom: 14 }}>
+                <div style={{ marginBottom: 10 }}>
                   <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>Phone number</div>
                   <div style={{ position: 'relative' }}>
                     <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: 'var(--text3)', display: 'flex' }}>{I.phone}</span>
                     <input className="input" style={{ paddingLeft: 32 }} placeholder="+961 XX XXX XXX" type="tel"
-                      value={newForm.phone} onChange={e => setNewForm(p => ({ ...p, phone: e.target.value }))}
+                      value={newForm.phone} onChange={e => setNewForm(p => ({ ...p, phone: e.target.value }))} />
+                  </div>
+                </div>
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>Email <span style={{ color: 'var(--text4)' }}>— for SOS location alerts</span></div>
+                  <div style={{ position: 'relative' }}>
+                    <span style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', width: 14, height: 14, color: 'var(--text3)', display: 'flex' }}>{I.mail}</span>
+                    <input className="input" style={{ paddingLeft: 32 }} placeholder="name@example.com" type="email"
+                      value={newForm.email || ''} onChange={e => setNewForm(p => ({ ...p, email: e.target.value }))}
                       onKeyDown={e => e.key === 'Enter' && saveNew()} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => { setAddingNew(false); setNewForm({ name: '', phone: '' }) }}>Cancel</button>
+                  <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => { setAddingNew(false); setNewForm({ name: '', phone: '', email: '' }) }}>Cancel</button>
                   <button className="btn btn-primary btn-sm" style={{ flex: 2 }} onClick={saveNew} disabled={saving}>
                     {saving ? 'Saving...' : 'Add contact'}
                   </button>
