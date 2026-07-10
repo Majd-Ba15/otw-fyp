@@ -27,7 +27,7 @@ export default function DriverHistory() {
 
   const initials      = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'SM'
   const filtered      = tab === 'All' ? rides : rides.filter(r=>r.status===tab)
-  const totalEarnings = rides.filter(r=>r.status==='Completed').reduce((s:number,r:any)=>s+(r.totalEarnings||0),0)
+  const confirmedRides = rides.filter(r=>r.status==='Completed' || r.status==='Confirmed').length
 
   return (
     <Layout role="Driver" userInitials={initials} unreadCount={unread}>
@@ -42,14 +42,10 @@ export default function DriverHistory() {
           </button>
         </div>
 
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
+        <div style={{display:'grid',gridTemplateColumns:'1fr',gap:10,marginBottom:16}}>
           <div className="stat-card">
-            <div style={{fontSize:28,fontWeight:700,color:'var(--text)'}}>{rides.filter(r=>r.status==='Completed').length}</div>
-            <div className="stat-label">Completed Rides</div>
-          </div>
-          <div className="stat-card">
-            <div style={{fontSize:28,fontWeight:700,color:'var(--green)'}}>${totalEarnings.toFixed(2)}</div>
-            <div className="stat-label">Total Earnings</div>
+            <div style={{fontSize:28,fontWeight:700,color:'var(--text)'}}>{confirmedRides}</div>
+            <div className="stat-label">Confirmed Rides</div>
           </div>
         </div>
 
@@ -65,10 +61,7 @@ export default function DriverHistory() {
           <div key={r.rideId} className="card" style={{marginBottom:10}}>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
               <span className={`badge ${r.status==='Completed'?'badge-green':'badge-red'}`}>{r.status}</span>
-              <div style={{textAlign:'right'}}>
-                <div style={{fontSize:14,fontWeight:700,color:'var(--green)'}}>${(r.totalEarnings||0).toFixed(2)}</div>
-                <div style={{fontSize:12,color:'var(--text3)'}}>{r.passengerCount||0} passengers</div>
-              </div>
+              <div style={{fontSize:12,color:'var(--text3)'}}>{r.passengerCount||0} passengers</div>
             </div>
             <div style={{marginBottom:8}}>
               <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:4}}><div className="rdot-g"/><span style={{fontSize:13,color:'var(--text)'}}>{r.fromLocation}</span></div>

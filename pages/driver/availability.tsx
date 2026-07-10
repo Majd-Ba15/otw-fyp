@@ -95,11 +95,11 @@ export default function DriverAvailability() {
             <span style={{ width: 18, height: 18, color: 'var(--blue)', display: 'flex' }}>{I.clock}</span>
             <h1 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>Add free driving time</h1>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div className="availability-grid two" style={{ marginBottom: 10 }}>
             <input className="input" placeholder="From area" value={form.fromLocation} onChange={e => setForm((p: any) => ({ ...p, fromLocation: e.target.value }))} />
             <input className="input" placeholder="To area" value={form.toLocation} onChange={e => setForm((p: any) => ({ ...p, toLocation: e.target.value }))} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div className="availability-grid time" style={{ marginBottom: 10 }}>
             <div>
               <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>Date *</div>
               <input className="input" type="date" value={form.date} onChange={e => setForm((p: any) => ({ ...p, date: e.target.value }))} />
@@ -113,7 +113,7 @@ export default function DriverAvailability() {
               <input className="input" type="time" value={form.timeTo} onChange={e => setForm((p: any) => ({ ...p, timeTo: e.target.value }))} />
             </div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+          <div className="availability-grid two" style={{ marginBottom: 10 }}>
             <div>
               <div style={{ fontSize: 12, color: 'var(--text3)', marginBottom: 4 }}>Seats</div>
               <select className="input" value={form.seats} onChange={e => setForm((p: any) => ({ ...p, seats: Number(e.target.value) }))}>
@@ -132,7 +132,7 @@ export default function DriverAvailability() {
           </button>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        <div className="availability-panels">
           <div>
             <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>My free slots</h2>
             {loading ? <div className="card">Loading...</div> : slots.length === 0 ? (
@@ -169,6 +169,30 @@ export default function DriverAvailability() {
           </div>
         </div>
       </div>
+      <style jsx>{`
+        .availability-grid {
+          display: grid;
+          gap: 10px;
+        }
+        .availability-grid.two {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .availability-grid.time {
+          grid-template-columns: minmax(130px, 1.2fr) minmax(110px, 1fr) minmax(110px, 1fr);
+        }
+        .availability-panels {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 14px;
+        }
+        @media (max-width: 720px) {
+          .availability-grid.two,
+          .availability-grid.time,
+          .availability-panels {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
     </Layout>
   )
 }

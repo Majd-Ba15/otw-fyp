@@ -13,25 +13,10 @@ function delta(cur: number, prev: number): { text: string; up: boolean } | null 
 export default function Analytics() {
   const [profile,   setProfile]   = useState<any>(null)
   const [raw,       setRaw]       = useState<any>(null)
-  const [ai,        setAi]        = useState<any>(null)
-  const [aiLoading, setAiLoading] = useState(false)
   const [loading,   setLoading]   = useState(true)
   const [unread,    setUnread]    = useState(0)
   const [days,      setDays]      = useState(7)
   const [isDemo,    setIsDemo]    = useState(false)
-
-  const loadAiSummary = async (analyticsData: any) => {
-    setAiLoading(true)
-    try {
-      const res = await fetch('/api/ai/analytics-summary', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: analyticsData }),
-      })
-      setAi(await res.json())
-    } catch { setAi(null) }
-    finally { setAiLoading(false) }
-  }
 
   const load = useCallback(async (d: number) => {
     setLoading(true)
@@ -39,10 +24,8 @@ export default function Analytics() {
       const res = await adminAPI.getAnalytics(d)
       setRaw(res.data)
       setIsDemo(false)
-      loadAiSummary(res.data)
     } catch {
       setRaw(null)
-      setAi(null)
       setIsDemo(true)
     } finally { setLoading(false) }
   }, [])
@@ -117,25 +100,6 @@ export default function Analytics() {
           <div style={{ textAlign: 'center', padding: '40px', color: 'var(--text3)', fontSize: 13 }}>Loading...</div>
         ) : raw && (
           <>
-            <div className="card" style={{ marginBottom: 16, border: '1px solid var(--blue)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span style={{ width: 17, height: 17, color: 'var(--blue)', display: 'flex' }}>{I.robot}</span>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>AI analytics summary</div>
-                {aiLoading && <span style={{ fontSize: 12, color: 'var(--text3)', marginLeft: 'auto' }}>Thinking...</span>}
-              </div>
-              {ai ? (
-                <>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--blue)', marginBottom: 8 }}>{ai.headline}</div>
-                  {(ai.insights || []).map((item: string, i: number) => (
-                    <div key={i} style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 5 }}>- {item}</div>
-                  ))}
-                  <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 8 }}>Recommended action: {ai.action}</div>
-                </>
-              ) : (
-                <div style={{ fontSize: 13, color: 'var(--text3)' }}>AI summary will appear here when analytics data is ready.</div>
-              )}
-            </div>
-
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 16 }}>
               {kpis.map((k: any, i: number) => (
                 <div key={i} className="stat-card">

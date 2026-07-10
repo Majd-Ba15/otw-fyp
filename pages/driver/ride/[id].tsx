@@ -76,6 +76,14 @@ export default function ManageRide() {
   }
   const cancelBlockReason = cancellationBlockReason(ride)
   const estimatedEarnings = ride?.status === 'Cancelled' ? 0 : bookedSeats(ride) * (ride?.pricePerSeat || 0)
+  const estTime = (mins: any) => {
+    const n = Number(mins)
+    if (!n || Number.isNaN(n)) return '—'
+    if (n < 60) return `~${Math.round(n)} min`
+    const h = Math.floor(n / 60)
+    const m = Math.round(n % 60)
+    return m ? `~${h}h ${m}m` : `~${h}h`
+  }
   return (
     <Layout role="Driver" showBack userInitials={initials} unreadCount={unread}>
       <div className="page-inner">
@@ -139,7 +147,7 @@ export default function ManageRide() {
               {[
                 { icon:I.users,  val:`${bookedSeats(ride)}/${ride.totalSeats}`, label:'Passengers' },
                 { icon:I.dollar, val:`$${ride.pricePerSeat}`,                   label:'Per Seat' },
-                { icon:I.nav,    val:'—',                                          label:'Est. Time' },
+                { icon:I.nav,    val:estTime(ride.durationMin ?? ride.DurationMin), label:'Est. Time' },
               ].map((s,i) => (
                 <div key={i} className="stat-card" style={{ textAlign:'center', padding:'12px 8px' }}>
                   <span style={{ width:20,height:20,color:'var(--text3)',display:'flex',margin:'0 auto 6px' }}>{s.icon}</span>

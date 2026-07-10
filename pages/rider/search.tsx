@@ -26,9 +26,6 @@ export default function SearchRides() {
   const [sortOpen,     setSortOpen]     = useState(false)
   const [showFromMap,  setShowFromMap]  = useState(false)
   const [showToMap,    setShowToMap]    = useState(false)
-  const [bestId,       setBestId]       = useState<number | null>(null)
-  const [bestReason,   setBestReason]   = useState('')
-  const [aiLoading,    setAiLoading]    = useState(false)
   const [form, setForm] = useState({ from: '', to: '', date: '', seats: 1, fromLat: 0, fromLng: 0 })
 
   // Load ALL rides on mount so map is populated immediately
@@ -41,7 +38,6 @@ export default function SearchRides() {
         const rides = (r.data || []).filter(isRideActive)
         setAllRides(rides)
         setDisplayed(rides)
-        if (rides.length > 1) runAiMatch(rides)
       })
       .catch(() => {
         // Demo rides with Lebanese coordinates so map looks populated
@@ -55,31 +51,14 @@ export default function SearchRides() {
         const activeDemo = demo.filter(isRideActive)
         setAllRides(activeDemo)
         setDisplayed(activeDemo)
-        if (activeDemo.length > 1) runAiMatch(activeDemo)
       })
       .finally(() => setLoadingAll(false))
   }, [])
-
-  const runAiMatch = async (results: any[]) => {
-    setAiLoading(true)
-    try {
-      const res = await fetch('/api/rides/match', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ rides: results, from: form.from, to: form.to, seats: form.seats }),
-      })
-      const data = await res.json()
-      if (data.bestId) { setBestId(data.bestId); setBestReason(data.reason) }
-    } catch {}
-    finally { setAiLoading(false) }
-  }
 
   const search = async () => {
     if (!form.to && !form.from) return
     setSearching(true)
     setSearched(true)
-    setBestId(null)
-    setBestReason('')
     try {
       const params: any = { from: form.from, to: form.to, date: form.date || undefined, seats: form.seats }
       if (form.fromLat) { params.fromLat = form.fromLat; params.fromLng = form.fromLng }
@@ -110,7 +89,6 @@ export default function SearchRides() {
 
       results = results.filter(isRideActive)   // never surface expired rides in search
       setDisplayed(results)
-      if (results.length > 1) runAiMatch(results)
     } catch {
       // Fall back to client-side filter of allRides
       const fl = form.from.toLowerCase()
@@ -129,8 +107,6 @@ export default function SearchRides() {
   const clearSearch = () => {
     setSearched(false)
     setDisplayed(allRides)
-    setBestId(null)
-    setBestReason('')
     setForm({ from: '', to: '', date: '', seats: 1, fromLat: 0, fromLng: 0 })
     setSelectedRide(null)
   }
@@ -289,22 +265,6 @@ export default function SearchRides() {
         </div>
 
         {/* AI match banner */}
-        {bestReason && bestId && (
-          <div style={{ background: 'linear-gradient(135deg,#1e40af,#2563eb)', borderRadius: 12, padding: '12px 14px', marginBottom: 12, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
-            <span style={{ width: 18, height: 18, color: 'white', display: 'flex', flexShrink: 0, marginTop: 1 }}>{I.robot}</span>
-            <div>
-              <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.8)', marginBottom: 2 }}>AI RECOMMENDATION</div>
-              <div style={{ fontSize: 13, color: 'white', lineHeight: 1.5 }}>{bestReason}</div>
-            </div>
-          </div>
-        )}
-        {aiLoading && !bestId && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', background: 'var(--blue-l)', borderRadius: 10, marginBottom: 12, fontSize: 13, color: 'var(--blue-d)' }}>
-            <span style={{ width: 14, height: 14, display: 'flex' }}>{I.robot}</span>
-            AI is finding your best match...
-          </div>
-        )}
-
         {/* ── Ride list ── */}
         {sorted.length === 0 && !loadingAll ? (
           <div className="card" style={{ textAlign: 'center', padding: '36px' }}>
@@ -318,32 +278,25 @@ export default function SearchRides() {
           </div>
         ) : (
           sorted.map((r: any) => {
-            const isAiBest   = (r.rideId || r.id) === bestId
             const isSelected = selectedRide && (selectedRide.rideId || selectedRide.id) === (r.rideId || r.id)
             const stops: string[] = stopNames(r.stops)
             return (
               <div key={r.rideId || r.id}
                 className="card card-hover"
-                style={{ cursor: 'pointer', marginBottom: 10, border: isAiBest ? '2px solid var(--blue)' : isSelected ? '2px solid var(--green)' : undefined, position: 'relative' }}
+                style={{ cursor: 'pointer', marginBottom: 10, border: isSelected ? '2px solid var(--green)' : undefined, position: 'relative' }}
                 onClick={() => {
                   try { sessionStorage.setItem('otw_ride_preview', JSON.stringify(r)) } catch {}
                   router.push(`/rider/ride/${r.rideId || r.id}`)
                 }}>
 
-                {/* AI badge */}
-                {isAiBest && (
-                  <div style={{ position: 'absolute', top: -1, right: 12, background: 'var(--blue)', color: 'white', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: '0 0 6px 6px', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <span style={{ width: 10, height: 10, display: 'flex' }}>{I.robot}</span> AI BEST MATCH
-                  </div>
-                )}
-                {r._nearbyStop && !isAiBest && (
+                {r._nearbyStop && (
                   <div style={{ position: 'absolute', top: -1, right: 12, background: 'var(--green)', color: 'white', fontSize: 10, fontWeight: 700, padding: '3px 8px', borderRadius: '0 0 6px 6px', display: 'flex', alignItems: 'center', gap: 4 }}>
                     <span style={{ width: 10, height: 10, display: 'flex' }}>{I.pin}</span> STOPS NEAR YOU
                   </div>
                 )}
 
                 {/* Driver + price */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, paddingTop: (isAiBest || r._nearbyStop) ? 8 : 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, paddingTop: r._nearbyStop ? 8 : 0 }}>
                   <div className="av" style={{ width: 40, height: 40, fontSize: 13 }}>
                     {r.driver?.initials || r.driver?.fullName?.slice(0, 2).toUpperCase() || '??'}
                   </div>

@@ -87,6 +87,16 @@ export default function RideDetail() {
 
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'AK'
   const isFull   = ride?.availableSeats === 0
+  const estTime = (mins: any) => {
+    const n = Number(mins)
+    if (!n || Number.isNaN(n)) return ''
+    if (n < 60) return `~${Math.round(n)} min driving`
+    const h = Math.floor(n / 60)
+    const m = Math.round(n % 60)
+    return m ? `~${h}h ${m}m driving` : `~${h}h driving`
+  }
+  const distanceText = Number(ride?.distanceKm ?? ride?.DistanceKm) > 0 ? `${Number(ride.distanceKm ?? ride.DistanceKm).toFixed(1)} km` : ''
+  const durationText = estTime(ride?.durationMin ?? ride?.DurationMin)
 
   if (!ride) return (
     <Layout role="Rider" showBack>
@@ -194,6 +204,12 @@ export default function RideDetail() {
               {new Date(ride.departureTime).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
+          {(distanceText || durationText) && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--green)', fontSize: 13, fontWeight: 600, marginTop: 8 }}>
+              <span style={{ width: 14, height: 14, display: 'flex' }}>{I.nav}</span>
+              {[distanceText, durationText].filter(Boolean).join(' - ')}
+            </div>
+          )}
         </div>
 
         {/* Vehicle */}

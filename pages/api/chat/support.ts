@@ -12,7 +12,7 @@ About OTW:
 - All users must be verified students (university email + OTP verification)
 - Drivers need admin approval before posting rides (student ID + driving licence verification)
 - Rides are paid in cash — rider pays the driver directly on the day
-- Prices are set by the driver when posting (typically $3–8 per seat); an AI price suggestion uses the real road distance
+- Prices are set manually by the driver when posting (typically $3–8 per seat)
 
 Key features:
 - DRIVERS: Post rides (with a real road-route preview and distance), set route/time/seats/price, accept or decline booking requests, add multiple stops (up to 6), set recurring schedules, publish free-time AVAILABILITY slots, accept rider RIDE REQUESTS (accepting instantly creates the ride and books the rider), rate riders, manage active rides with live GPS, view earnings

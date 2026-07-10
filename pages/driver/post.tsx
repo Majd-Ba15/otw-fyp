@@ -13,8 +13,6 @@ export default function PostRide() {
   const router = useRouter()
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(false)
-  const [aiLoading, setAiLoading] = useState<'price' | 'description' | null>(null)
-  const [priceReason, setPriceReason] = useState('')
   const [showMapFrom, setShowMapFrom] = useState(false)
   const [showMapTo,   setShowMapTo]   = useState(false)
   const [routeInfo, setRouteInfo] = useState<{ distanceKm:number; durationMin:number; usedFallback:boolean } | null>(null)
@@ -26,34 +24,6 @@ export default function PostRide() {
   useEffect(()=>{ userAPI.getMe().then(r=>setProfile(r.data)).catch(()=>{}) },[])
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase()||'SM'
   const toggleDay = (d:string) => setForm(p=>({...p,recurringDays:p.recurringDays.includes(d)?p.recurringDays.filter(x=>x!==d):[...p.recurringDays,d]}))
-
-  const runDriverAi = async (mode: 'price' | 'description') => {
-    if (!form.from || !form.to) { toast.error('Add pickup and drop-off first'); return }
-    setAiLoading(mode)
-    try {
-      const res = await fetch('/api/ai/driver-assist', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        // Send the real road distance (from OSRM) so pricing is based on actual
-        // km, not a string-length guess. May be undefined until a route is drawn.
-        body: JSON.stringify({ ...form, distanceKm: routeInfo?.distanceKm, mode }),
-      })
-      const data = await res.json()
-      if (mode === 'price' && data.price) {
-        setForm(p => ({ ...p, price: Number(data.price) }))
-        setPriceReason(data.priceReason || '')
-        toast.success('AI price suggested')
-      }
-      if (mode === 'description' && data.description) {
-        setForm(p => ({ ...p, notes: data.description }))
-        toast.success('AI note generated')
-      }
-    } catch {
-      toast.error('AI suggestion failed')
-    } finally {
-      setAiLoading(null)
-    }
-  }
 
   const submit = async ()=>{
     if(!form.from||!form.to||!form.departureTime){toast.error('Please fill all required fields');return}
@@ -149,18 +119,10 @@ export default function PostRide() {
             <div>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',minHeight:24,marginBottom:4}}>
                 <div style={{fontSize:12,color:'var(--text3)'}}>Price ($)</div>
-                <button className="btn btn-secondary btn-sm" style={{fontSize:11,padding:'4px 7px'}} onClick={()=>runDriverAi('price')} disabled={aiLoading==='price'}>
-                  {aiLoading==='price'?'Thinking...':'AI price'}
-                </button>
               </div>
               <input className="input" type="number" min={1} value={form.price} onChange={e=>setForm(p=>({...p,price:parseFloat(e.target.value)}))}/>
             </div>
           </div>
-          {priceReason && (
-            <div style={{fontSize:12,color:'var(--blue)',background:'var(--blue-l)',borderRadius:8,padding:'8px 10px',marginBottom:12}}>
-              {priceReason}
-            </div>
-          )}
           <div style={{display:'flex',gap:8}}>
             {['Any','Female','Male'].map(g=>(
               <button key={g} className={`chip ${form.genderPref===g?'active':''}`} onClick={()=>setForm(p=>({...p,genderPref:g}))}>{g}</button>
@@ -170,12 +132,7 @@ export default function PostRide() {
 
         {/* Notes */}
         <div className="card" style={{marginBottom:14}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
-            <div style={{fontSize:14,fontWeight:600,color:'var(--text)'}}>Notes for riders</div>
-            <button className="btn btn-secondary btn-sm" onClick={()=>runDriverAi('description')} disabled={aiLoading==='description'}>
-              {aiLoading==='description'?'Writing...':'AI note'}
-            </button>
-          </div>
+          <div style={{fontSize:14,fontWeight:600,color:'var(--text)',marginBottom:8}}>Notes for riders</div>
           <textarea className="input" rows={3} placeholder="e.g. No smoking. Music on." value={form.notes} onChange={e=>setForm(p=>({...p,notes:e.target.value}))}/>
         </div>
 
