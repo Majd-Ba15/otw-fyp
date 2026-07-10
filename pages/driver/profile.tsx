@@ -118,13 +118,13 @@ export default function DriverProfile() {
         <div className="card" style={{marginBottom:12}}>
           <div style={{fontSize:13,fontWeight:600,color:'var(--text)',marginBottom:10}}>Contact Information</div>
           {[
-            {icon:I.phone, val:profile?.phone||'—'},
+            {icon:null,    val:profile?.phone||'—'},
             {icon:I.mail,  val:profile?.email||'—'},
             {icon:I.pin,   val:profile?.faculty||'—'},
             {icon:I.clock, val:`Joined ${profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en',{month:'long',year:'numeric'}) : '—'}`},
           ].map((c,i) => (
             <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 0',borderBottom:i<3?'1px solid var(--border)':'none',fontSize:13,color:'var(--text2)'}}>
-              <span style={{width:15,height:15,color:'var(--text3)',display:'flex'}}>{c.icon}</span>{c.val}
+              {c.icon && <span style={{width:15,height:15,color:'var(--text3)',display:'flex'}}>{c.icon}</span>}{c.val}
             </div>
           ))}
         </div>

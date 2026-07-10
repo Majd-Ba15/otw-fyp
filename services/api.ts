@@ -1,5 +1,6 @@
 import axios from 'axios'
 import Cookies from 'js-cookie'
+import { deepFixMojibake } from '../lib/text'
 
 // /backend-api/* is proxied by Next.js → backend (no CORS, no port conflicts with local /api/* routes)
 const API = axios.create({ baseURL: '/backend-api' })
@@ -9,7 +10,13 @@ API.interceptors.request.use(cfg => {
   if (token) cfg.headers.Authorization = `Bearer ${token}`
   return cfg
 })
-API.interceptors.response.use(r => r, err => {
+API.interceptors.response.use(r => {
+  // Repair UTF-8→Windows-1252 mojibake (garbled emoji/arrows/quotes) in every
+  // backend string, once, for the whole app. See lib/text.ts. This is a client
+  // workaround for an upstream charset mismatch — the real fix is on the backend.
+  if (r.data) r.data = deepFixMojibake(r.data)
+  return r
+}, err => {
   if (err.response?.status === 401) {
     Cookies.remove('otw_token')
     if (typeof window !== 'undefined') window.location.href = '/auth/login'

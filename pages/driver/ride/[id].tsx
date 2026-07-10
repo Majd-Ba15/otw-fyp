@@ -38,7 +38,23 @@ export default function ManageRide() {
     try { await rideAPI.startRide(Number(id)); toast.success('Ride started!'); router.push('/driver/ride/active') }
     catch (e: any) { toast.error(e.response?.data?.message || 'Failed to start ride') }
   }
+  const cancellationBlockReason = (r: any) => {
+    if (!r || r.status === 'Cancelled' || r.status === 'Completed') return ''
+    if (r.status === 'Active') return 'This ride has already started. Please message passengers instead.'
+    const departureMs = new Date(r.departureTime).getTime()
+    if (!departureMs || Number.isNaN(departureMs)) return ''
+    const oneHourMs = 60 * 60 * 1000
+    if (departureMs - Date.now() <= oneHourMs) {
+      return 'You cannot cancel within 1 hour of the trip start. Please contact passengers by chat.'
+    }
+    return ''
+  }
   const cancelRide = async () => {
+    const blockReason = cancellationBlockReason(ride)
+    if (blockReason) {
+      toast.error(blockReason)
+      return
+    }
     try { await rideAPI.cancel(Number(id)); toast.success('Ride cancelled'); router.push('/driver/rides') }
     catch (e: any) { toast.error(e.response?.data?.message || 'Failed to cancel') }
   }
@@ -46,6 +62,7 @@ export default function ManageRide() {
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'SM'
   const bookedSeats = (r: any) => {
     if (!r) return 0
+    if (r.status === 'Cancelled') return 0
     if (typeof r.bookedSeats === 'number') return r.bookedSeats
     if (typeof r.totalSeats === 'number' && typeof r.availableSeats === 'number') {
       return Math.max(0, r.totalSeats - r.availableSeats)
@@ -57,15 +74,8 @@ export default function ManageRide() {
     const name = p.rider?.fullName || p.fullName
     return `/chat/${id}${userId ? `?userId=${userId}${name ? `&name=${encodeURIComponent(name)}` : ''}` : ''}`
   }
-  const callPassenger = (p: any) => {
-    const phone = p.rider?.phone || p.phone
-    if (!phone) {
-      toast.error('No phone number available for this passenger')
-      return
-    }
-    window.location.href = `tel:${phone}`
-  }
-
+  const cancelBlockReason = cancellationBlockReason(ride)
+  const estimatedEarnings = ride?.status === 'Cancelled' ? 0 : bookedSeats(ride) * (ride?.pricePerSeat || 0)
   return (
     <Layout role="Driver" showBack userInitials={initials} unreadCount={unread}>
       <div className="page-inner">
@@ -81,11 +91,21 @@ export default function ManageRide() {
                 <button className="btn btn-secondary btn-sm" style={{ display:'flex',alignItems:'center',gap:5 }}>
                   <span style={{ width:13,height:13,display:'flex' }}>{I.edit}</span> Edit
                 </button>
-                <button className="btn btn-danger btn-sm" style={{ display:'flex',alignItems:'center',gap:5 }} onClick={cancelRide}>
+                <button className="btn btn-danger btn-sm" style={{ display:'flex',alignItems:'center',gap:5 }} onClick={cancelRide} disabled={!!cancelBlockReason} title={cancelBlockReason || undefined}>
                   <span style={{ width:13,height:13,display:'flex' }}>{I.trash}</span> Cancel
                 </button>
               </div>
             </div>
+
+            {cancelBlockReason && (
+              <div className="notice notice-amber">
+                <span style={{ width:16,height:16,display:'flex',flexShrink:0 }}>{I.info}</span>
+                <div>
+                  <div style={{ fontWeight:600 }}>Cancellation locked</div>
+                  <div>{cancelBlockReason}</div>
+                </div>
+              </div>
+            )}
 
             <div className="card">
               <div style={{ fontSize:11,color:'var(--text3)',textTransform:'uppercase',letterSpacing:.05,marginBottom:4 }}>PICKUP</div>
@@ -133,7 +153,7 @@ export default function ManageRide() {
               <div style={{ display:'flex', justifyContent:'space-between' }}>
                 <div>
                   <div style={{ fontSize:12,color:'var(--text3)',marginBottom:4 }}>Estimated Earnings</div>
-                  <div style={{ fontSize:22,fontWeight:700,color:'var(--text)' }}>${(bookedSeats(ride)*(ride.pricePerSeat||0)).toFixed(2)}</div>
+                  <div style={{ fontSize:22,fontWeight:700,color:'var(--text)' }}>${estimatedEarnings.toFixed(2)}</div>
                 </div>
                 <div style={{ textAlign:'right',fontSize:12,color:'var(--text3)' }}>
                   <div>{bookedSeats(ride)} passengers</div>
@@ -154,7 +174,6 @@ export default function ManageRide() {
                   <div className="av">{p.rider?.fullName?.slice(0,2).toUpperCase()}</div>
                   <div style={{ flex:1 }}><div style={{ fontSize:13,fontWeight:500,color:'var(--text)' }}>{p.rider?.fullName}</div></div>
                   <button className="btn-icon btn-secondary" onClick={() => router.push(passengerChatHref(p))}><span style={{ width:15,height:15,display:'flex' }}>{I.msg}</span></button>
-                  <button className="btn-icon btn-secondary" onClick={() => callPassenger(p)} disabled={!(p.rider?.phone || p.phone)}><span style={{ width:15,height:15,display:'flex' }}>{I.phone}</span></button>
                 </div>
               </div>
             ))}

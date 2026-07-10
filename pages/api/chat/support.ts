@@ -162,7 +162,7 @@ function getFallback(message: string, context: string): string {
   const s = message.toLowerCase()
   const d = context === 'driver'
   if (/request|no ride|availab/.test(s)) return d ? "Add your free time on the Availability page — matching rider requests appear there and accepting one creates the ride automatically." : "If no ride fits, use Request Ride: set your route, time and seats — available drivers get notified and can accept."
-  if (/book|reserve/.test(s)) return d ? "Riders book your ride from the Search page. Accept or decline from Pending Requests." : "Go to Search, enter your route and date, pick a ride, and tap Book Seat."
+  if (/book|reserve/.test(s)) return d ? "Riders send booking requests from the Search page. Accept or decline them from Pending Requests." : "Go to Search, enter your route and date, pick a trip, and tap Send request to book."
   if (/cancel/.test(s)) return d ? "Go to Manage Rides and tap Cancel Ride — passengers are notified automatically." : "Go to My Bookings and tap Cancel before the ride departs."
   if (/post|create/.test(s)) return "Tap + Post Ride, fill in the route, time, seats, and price. Enable Recurring Ride to repeat it on set days."
   if (/verif|approv/.test(s)) return "Driver verification takes up to 24 hours. Admin reviews your student ID and licence. You'll get an email once approved."

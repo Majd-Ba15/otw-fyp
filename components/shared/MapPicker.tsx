@@ -1,11 +1,11 @@
 ﻿// components/shared/MapPicker.tsx
-// Click on map to pick a location â€” returns lat/lng and address name
+// Click on map to pick a location — returns lat/lng and address name
 // Usage: <MapPicker label="Pickup" onPick={(lat,lng,name) => ...} />
 //
 // Additive campus support: every campus from lib/universities.ts is rendered
 // as a pin, plus a horizontal quick-select chip row above the map. Picking a
 // campus (pin or chip) skips Nominatim entirely and reports the clean campus
-// name â€” the original click-anywhere + reverse-geocode flow is unchanged.
+// name — the original click-anywhere + reverse-geocode flow is unchanged.
 
 import { useEffect, useRef, useState } from 'react'
 import { allCampuses, type Campus } from '../../lib/universities'
@@ -16,10 +16,10 @@ interface Props {
   initial?:           { lat: number; lng: number }
   height?:            number
   userUniversity?:    string   // orders that university's campuses first in the chip row
-  highlightCampuses?: boolean  // default true â€” set false on compact in-form pickers to hide pins/chips
+  highlightCampuses?: boolean  // default true — set false on compact in-form pickers to hide pins/chips
 }
 
-// "LAU Beirut Campus" -> "LAU Beirut" â€” short enough for a pin label / chip
+// "LAU Beirut Campus" -> "LAU Beirut" — short enough for a pin label / chip
 function shortCampusName(name: string): string {
   return name.replace(/\s*Campus$/i, '')
 }
@@ -48,7 +48,7 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
       })
     : []
 
-  // Reverse-geocode via Nominatim â€” used for free map clicks and for dragging
+  // Reverse-geocode via Nominatim — used for free map clicks and for dragging
   // the marker away from a picked campus (it's no longer an exact campus point).
   function reverseGeocode(lat: number, lng: number, marker: any) {
     fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`)
@@ -67,7 +67,7 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
   }
 
   // Selecting a campus (pin click or chip tap): move/create the draggable
-  // marker at the exact campus coords, report the clean campus name â€” no
+  // marker at the exact campus coords, report the clean campus name — no
   // Nominatim call, so it can never get overwritten by a nearby street address.
   function selectCampus(lat: number, lng: number, name: string) {
     const L = leafletRef.current
@@ -106,7 +106,7 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
         shadowUrl:     'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
       })
 
-      // Default center â€” Lebanon (Beirut)
+      // Default center — Lebanon (Beirut)
       const center: [number, number] = initial
         ? [initial.lat, initial.lng]
         : [33.8869, 35.5131]
@@ -150,7 +150,7 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
         reverseGeocode(lat, lng, markRef.current)
       })
 
-      // Campus pins â€” one per campus, always visible, distinct from the
+      // Campus pins — one per campus, always visible, distinct from the
       // free-pick marker. Clicking one selects it exactly like a map click,
       // except the name is the campus name (no Nominatim call).
       if (highlightCampuses) {
@@ -203,7 +203,7 @@ export default function MapPicker({ label, onPick, initial, height = 180, userUn
         <div ref={ref} style={{ height, width: '100%', borderRadius: 10, overflow: 'hidden', border: `1.5px dashed ${picked ? '#16a36b' : 'var(--border)'}`, cursor: 'crosshair' }} />
         {picked && (
           <div style={{ fontSize: 11, color: '#16a36b', marginTop: 4, display: 'flex', gap: 4, alignItems: 'center' }}>
-            <span>ðŸ“</span><span>{picked}</span>
+            <span>📍</span><span>{picked}</span>
           </div>
         )}
         {!picked && (

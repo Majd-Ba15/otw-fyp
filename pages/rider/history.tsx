@@ -32,8 +32,10 @@ export default function RiderHistory() {
 
   const initials    = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'AK'
   const filtered    = tab === 'All' ? bookings : bookings.filter(b => b.status === tab)
-  const totalSpent  = bookings.filter(b=>b.status==='Completed'||b.status==='Confirmed').reduce((s:number,b:any)=>s+((b.seatsBooked||1)*(b.ride?.pricePerSeat||0)),0)
-  const completedCt = bookings.filter(b=>b.status==='Completed'||b.status==='Confirmed').length
+  const isPaidBooking = (b: any) => b.status === 'Completed' || b.status === 'Confirmed'
+  const bookingAmount = (b: any) => isPaidBooking(b) ? (b.seatsBooked || 1) * (b.ride?.pricePerSeat || 0) : 0
+  const totalSpent  = bookings.reduce((s:number,b:any)=>s + bookingAmount(b),0)
+  const completedCt = bookings.filter(isPaidBooking).length
 
   const stars = (n:number) => Array.from({length:5},(_,i)=>(
     <span key={i} style={{width:13,height:13,color:i<n?'#F59E0B':'var(--border2)',display:'inline-flex'}}>{i<n?I.starF:I.star}</span>
@@ -89,7 +91,9 @@ export default function RiderHistory() {
                 <span style={{display:'flex',alignItems:'center',gap:3}}><span style={{width:11,height:11,display:'flex'}}>{I.clock}</span>{new Date(b.ride?.departureTime).toLocaleDateString('en',{day:'numeric',month:'short',year:'numeric'})}</span>
                 <span style={{display:'flex',alignItems:'center',gap:3}}><span style={{width:11,height:11,display:'flex'}}>{I.clock}</span>{new Date(b.ride?.departureTime).toLocaleTimeString('en',{hour:'2-digit',minute:'2-digit'})}</span>
               </div>
-              <span style={{fontSize:13,fontWeight:600,color:'var(--green)'}}>${((b.seatsBooked||1)*(b.ride?.pricePerSeat||0)).toFixed(2)}</span>
+              <span style={{fontSize:13,fontWeight:600,color:isPaidBooking(b)?'var(--green)':'var(--text3)'}}>
+                {isPaidBooking(b) ? `$${bookingAmount(b).toFixed(2)}` : 'No charge'}
+              </span>
             </div>
             {b.myRating && (
               <div style={{marginTop:8,display:'flex',alignItems:'center',gap:4,fontSize:12,color:'var(--text3)'}}>

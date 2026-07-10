@@ -40,7 +40,6 @@ export default function RiderProfile() {
   const menuItems = [
     { icon: I.sos,    label: 'Emergency contacts',   href: '/rider/emergency' },
     { icon: I.bell,   label: 'Notification settings', href: '/notifications' },
-    { icon: I.shield, label: 'Privacy & security',    href: '#' },
     { icon: I.logout, label: 'Log out',               action: logout, danger: true },
   ]
 

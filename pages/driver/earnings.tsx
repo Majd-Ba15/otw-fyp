@@ -24,9 +24,17 @@ export default function Earnings() {
   }, [])
 
   const initials     = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'SM'
-  const total        = Number(stats?.earnings || 0)
-  const week         = Number(stats?.weekEarnings || 0)
-  const transactions = stats?.transactions || []
+  const paidStatuses = ['Confirmed', 'Completed']
+  const transactions = (stats?.transactions || []).filter((t: any) => paidStatuses.includes(t.status))
+  const transactionTotal = transactions.reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0)
+  const transactionWeek = transactions
+    .filter((t: any) => {
+      const time = new Date(t.time).getTime()
+      return time && !Number.isNaN(time) && Date.now() - time <= 7 * 24 * 60 * 60 * 1000
+    })
+    .reduce((sum: number, t: any) => sum + Number(t.amount || 0), 0)
+  const total        = transactions.length ? transactionTotal : Number(stats?.earnings || 0)
+  const week         = transactions.length ? transactionWeek : Number(stats?.weekEarnings || 0)
 
   const fmtTime = (iso: string) => {
     try { return new Date(iso).toLocaleString('en', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) }

@@ -36,9 +36,9 @@ export default function ConfirmBooking() {
     setLoading(true)
     try {
       await bookingAPI.book({ rideId:Number(rideId), seatsBooked:seats })
-      toast.success('Booking confirmed!')
+      toast.success('Booking request sent. Waiting for driver approval.')
       router.push('/rider/dashboard')
-    } catch(e:any) { toast.error(e.response?.data?.message||'Booking failed') }
+    } catch(e:any) { toast.error(e.response?.data?.message||'Could not send booking request') }
     finally { setLoading(false) }
   }
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase()||'AK'
@@ -46,9 +46,13 @@ export default function ConfirmBooking() {
   return (
     <Layout role="Rider" showBack userInitials={initials}>
       <div className="page-inner" style={{maxWidth:520}}>
-        <h1 style={{fontSize:20,fontWeight:700,color:'var(--text)',marginBottom:16}}>Confirm booking</h1>
+        <h1 style={{fontSize:20,fontWeight:700,color:'var(--text)',marginBottom:16}}>Request to book</h1>
         {ride && (
           <>
+            <div className="notice notice-blue">
+              <span style={{width:16,height:16,display:'flex'}}>{I.info}</span>
+              <div><div style={{fontWeight:600}}>Pending driver approval</div><div>Your request is sent to the driver first. The trip is confirmed only after the driver accepts it.</div></div>
+            </div>
             <div className="card">
               <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
                 <div className="av">{ride.driver?.initials}</div>
@@ -80,7 +84,7 @@ export default function ConfirmBooking() {
               </div>
             </div>
             <div className="card">
-              <div style={{fontSize:14,fontWeight:600,color:'var(--text)',marginBottom:12}}>Number of seats</div>
+              <div style={{fontSize:14,fontWeight:600,color:'var(--text)',marginBottom:12}}>Seats to request</div>
               <div style={{position:'relative'}}>
                 <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',width:15,height:15,color:'var(--text3)',display:'flex'}}>{I.users}</span>
                 <select className="input" style={{paddingLeft:32}} value={seats} onChange={e=>setSeats(parseInt(e.target.value))}>
@@ -105,7 +109,7 @@ export default function ConfirmBooking() {
               <div><div style={{fontWeight:600}}>Pay cash to driver</div><div>Payment is made directly to the driver at pickup or drop-off.</div></div>
             </div>
             <button className="btn btn-primary btn-full btn-lg" onClick={confirm} disabled={loading}>
-              {loading ? 'Confirming...' : `Confirm booking — $${total}`}
+              {loading ? 'Sending request...' : `Send request to book - $${total}`}
             </button>
           </>
         )}

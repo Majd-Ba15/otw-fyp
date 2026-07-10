@@ -141,7 +141,7 @@ export default function Chat() {
   const selectedPassengerName = selectedPassenger?.rider?.fullName || selectedPassenger?.fullName
   const otherName     = selectedPassengerName || ride?.driverName || ride?.otherUserName || (typeof queryName === 'string' ? queryName : '') || (role === 'Rider' ? 'Your driver' : 'Passenger')
   const otherInitials = ride?.driverInitials || (otherName.split(' ').map((n:string) => n[0]).join('').slice(0,2).toUpperCase())
-  const route         = ride ? `${ride.fromLocation} â†’ ${ride.toLocation}` : ''
+  const route         = ride ? `${ride.fromLocation} → ${ride.toLocation}` : ''
   const accentColor   = role === 'Driver' ? 'var(--blue)' : 'var(--green)'
   const myBubble      = role === 'Driver' ? 'bubble bubble-driver-me' : 'bubble bubble-me'
   const initials      = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'ME'
@@ -201,7 +201,7 @@ export default function Chat() {
           <div style={{ padding: '10px 20px', background: 'var(--blue-l)', borderBottom: `2px solid var(--blue)`, display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ width: 14, height: 14, color: 'var(--blue)', display: 'flex', flexShrink: 0 }}>{I.send}</span>
             <span style={{ fontSize: 12, color: 'var(--blue-d)', fontWeight: 600, flex: 1 }}>
-              Broadcast mode â€” message will be sent to ALL passengers on this ride
+              Broadcast mode — message will be sent to ALL passengers on this ride
             </span>
             <button onClick={() => setShowBroadcast(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--blue-d)', display: 'flex' }}>
               <span style={{ width: 14, height: 14, display: 'flex' }}>{I.x}</span>

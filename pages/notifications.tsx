@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/router'
 import Layout, { I } from '../components/layout/Layout'
 import { userAPI, notifAPI } from '../services/api'
 import Cookies from 'js-cookie'
@@ -16,21 +15,6 @@ const TYPE_META: Record<string, { icon: any; color: string; label: string }> = {
   cancelled:   { icon: null, color: 'var(--red)',    label: 'Cancelled' },
 }
 
-const RIDER_TRIGGER = [
-  { icon: '✅', color: 'var(--green)', text: 'Driver accepted booking' },
-  { icon: '❌', color: 'var(--red)',   text: 'Driver declined booking' },
-  { icon: '🕐', color: 'var(--blue)',  text: 'Ride starting in 1 hour' },
-  { icon: '💬', color: 'var(--blue)',  text: 'New message from driver' },
-  { icon: '⭐', color: '#F59E0B',      text: 'Rate your completed ride' },
-]
-const DRIVER_TRIGGER = [
-  { icon: '🙋', color: 'var(--blue)',  text: 'Now booking request' },
-  { icon: '🕐', color: 'var(--blue)',  text: 'Ride starting in 1 hour' },
-  { icon: '💬', color: 'var(--blue)',  text: 'Now message from rider' },
-  { icon: '⭐', color: '#F59E0B',      text: 'Now rating received' },
-  { icon: '🛡️', color: 'var(--green)', text: 'Verification approved/rejected' },
-]
-
 const RIDER_FALLBACK = [
   { notificationId:1, type:'booking',   title:'Booking confirmed!',         body:'Sarah Tan accepted your booking for UTM → KL Sentral', createdAt: new Date(Date.now()-2*60000).toISOString(),   isRead:false },
   { notificationId:2, type:'message',   title:'New message',                body:"Sarah Tan: \"I'm 5 minutes away\"",                    createdAt: new Date(Date.now()-8*60000).toISOString(),   isRead:false },
@@ -46,7 +30,6 @@ const DRIVER_FALLBACK = [
 ]
 
 export default function Notifications() {
-  const router  = useRouter()
   const [profile,  setProfile]  = useState<any>(null)
   const [role,     setRole]     = useState<'Rider'|'Driver'|'Admin'>('Rider')
   const [notifs,   setNotifs]   = useState<any[]>([])
@@ -99,8 +82,6 @@ export default function Notifications() {
   const newNotifs    = displayed.filter(n => !n.isRead)
   const earlierNotifs = displayed.filter(n => n.isRead)
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'AK'
-  const accentColor = role === 'Driver' ? 'var(--blue)' : role === 'Admin' ? 'var(--amber)' : 'var(--green)'
-  const triggerList = role === 'Driver' ? DRIVER_TRIGGER : RIDER_TRIGGER
 
   const NotifCard = ({ n }: { n: any }) => (
     <div
@@ -163,9 +144,9 @@ export default function Notifications() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 260px', gap: 20, alignItems: 'start' }}>
+        <div>
 
-          {/* LEFT: notification list */}
+          {/* Notification list */}
           <div>
             {loading ? (
               <div style={{ textAlign:'center', padding:'40px', color:'var(--text3)', fontSize:13 }}>Loading…</div>
@@ -204,37 +185,6 @@ export default function Notifications() {
                   <button className={`toggle ${val?'on':''}`} onClick={() => setSettings(p => ({...p,[key]:!val}))} aria-label={key} />
                 </div>
               ))}
-            </div>
-          </div>
-
-          {/* RIGHT: trigger guide */}
-          <div>
-            <div className="card" style={{ padding:'16px', marginBottom:12 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:'var(--text)', marginBottom:12 }}>
-                What triggers each notification
-              </div>
-              <div style={{ fontSize:11, fontWeight:600, color:'var(--text3)', textTransform:'uppercase', letterSpacing:.06, marginBottom:8 }}>
-                {role === 'Driver' ? 'Driver' : 'Rider'} receives
-              </div>
-              {triggerList.map((t, i) => (
-                <div key={i} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 0', borderBottom: i < triggerList.length-1 ? '1px solid var(--border)' : 'none' }}>
-                  <span style={{ fontSize:14 }}>{t.icon}</span>
-                  <span style={{ fontSize:12, color:'var(--text2)' }}>{t.text}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Quick action */}
-            <div className="card" style={{ padding:'16px' }}>
-              <div style={{ fontSize:13, fontWeight:700, color:'var(--text)', marginBottom:10 }}>Quick actions</div>
-              <button className={`btn btn-sm btn-full ${role==='Driver' ? 'btn-blue' : 'btn-primary'}`} style={{ marginBottom:8 }}
-                onClick={() => router.push(role === 'Driver' ? '/driver/requests' : '/rider/search')}>
-                {role === 'Driver' ? 'View booking requests' : 'Search rides'}
-              </button>
-              <button className="btn btn-sm btn-full btn-secondary"
-                onClick={() => router.push('/chat')}>
-                Open messages
-              </button>
             </div>
           </div>
         </div>
