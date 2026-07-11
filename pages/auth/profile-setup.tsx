@@ -89,7 +89,7 @@ export default function ProfileSetup() {
     //    profile page. OTP verification now issues a JWT, so this is
     //    authenticated; failure is non-fatal (localStorage keeps a copy).
     try {
-      await userAPI.updateMe({ studentId: form.studentId, faculty: form.faculty, phone: form.phone, gender: form.gender, campusName: form.campusName || null })
+      await userAPI.updateMe({ studentId: form.studentId, faculty: form.faculty, phone: form.phone, gender: form.gender, campusName: form.campusName || null, profilePhoto: photoUrl })
     } catch {
       // offline/backend down — continue; data can be re-entered from Profile
     }

@@ -55,7 +55,7 @@ export default function RiderProfile() {
             <button onClick={() => fileRef.current?.click()} style={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderRadius: '50%', background: 'var(--green)', border: '2px solid white', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
               <span style={{ width: 12, height: 12, color: 'white', display: 'flex' }}>{I.camera}</span>
             </button>
-            <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={async e => { const f = e.target.files?.[0]; if (f) { try { await userAPI.uploadPhoto(f); toast.success('Photo updated!'); userAPI.getMe().then(r => setProfile(r.data)) } catch { toast.error('Upload failed') } } }} />
+            <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={async e => { const f = e.target.files?.[0]; if (f) { try { const res = await userAPI.uploadPhoto(f); if (res.data?.url) await userAPI.updateMe({ profilePhoto: res.data.url }); toast.success('Photo updated!'); userAPI.getMe().then(r => setProfile(r.data)) } catch { toast.error('Upload failed') } } }} />
           </div>
           <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)' }}>{profile?.fullName}</div>
           <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>

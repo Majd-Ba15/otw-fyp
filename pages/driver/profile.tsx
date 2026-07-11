@@ -37,7 +37,8 @@ export default function DriverProfile() {
   const uploadPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; if (!f) return
     try {
-      await userAPI.uploadPhoto(f)
+      const res = await userAPI.uploadPhoto(f)
+      if (res.data?.url) await userAPI.updateMe({ profilePhoto: res.data.url })
       toast.success('Photo updated!')
       userAPI.getMe().then(r => setProfile(r.data))
     } catch { toast.error('Upload failed') }
