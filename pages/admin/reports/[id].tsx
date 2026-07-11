@@ -39,6 +39,9 @@ export default function ReportDetail() {
           statement: raw.statement || raw.description || raw.body || '',
           reporter:  raw.reporter  || { fullName: raw.reporterName, totalRides: raw.reporterRides, averageRating: raw.reporterRating, reportCount: raw.reporterReportCount || 0 },
           reported:  raw.reported  || { fullName: raw.reportedName, totalRides: raw.reportedRides, averageRating: raw.reportedRating, reportCount: raw.reportedReportCount || 0 },
+          // Id of the reported user — needed so Warn/Suspend/Ban can act on the
+          // real account, not just mark the report resolved.
+          reportedUserId: raw.report?.reportedUser ?? raw.reported?.userId ?? raw.reportedUser ?? null,
         }
         setReport(parsedReport)
         loadAiSummary(parsedReport)
@@ -71,12 +74,40 @@ export default function ReportDetail() {
     })
   }, [id])
 
+  // Label recorded on the report (backend stores it as ActionTaken).
+  const ACTION_LABELS: Record<string, string> = {
+    no_action: 'No action',
+    warning:   'Warning issued',
+    suspend:   'User suspended',
+    ban:       'User banned',
+  }
+
   const resolve = async (action: string) => {
+    const reportId = Number(id)
+    const targetUserId = report?.reportedUserId
+    // Warn/Suspend/Ban act on a real account. Block them for reports not linked
+    // to a backend user (e.g. locally-stored reports) so nothing silently no-ops.
+    if (action !== 'no_action' && !targetUserId) {
+      toast.error('This report is not linked to a user account, so this action cannot be applied.')
+      return
+    }
+    // Confirm destructive actions before touching the account.
+    if ((action === 'suspend' || action === 'ban') &&
+        !window.confirm(`${action === 'ban' ? 'Ban' : 'Suspend'} ${report?.against || 'this user'}? This ${action === 'ban' ? 'blocks and unverifies' : 'deactivates'} their account.`)) {
+      return
+    }
     try {
-      await adminAPI.resolveReport(Number(id), { action, note })
-      toast.success(`Action "${action}" applied`)
+      // 1) Apply the moderation action to the reported user.
+      if (action === 'warning')      await adminAPI.warn(targetUserId, { note: note?.trim() || 'You have received a warning following a report about your conduct on OTW.' })
+      else if (action === 'suspend') await adminAPI.suspend(targetUserId)
+      else if (action === 'ban')     await adminAPI.ban(targetUserId)
+      // 2) Close the report and record which action was taken.
+      await adminAPI.resolveReport(reportId, { note, reason: ACTION_LABELS[action] || action })
+      toast.success(action === 'no_action' ? 'Report resolved' : `${ACTION_LABELS[action]} — report resolved`)
       router.push('/admin/reports')
-    } catch (e: any) { toast.error(e.response?.data?.message || 'Failed to resolve report') }
+    } catch (e: any) {
+      toast.error(e.response?.data?.message || 'Failed to apply action')
+    }
   }
 
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'AD'

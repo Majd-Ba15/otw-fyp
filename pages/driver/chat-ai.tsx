@@ -12,7 +12,7 @@ export default function DriverChatAI() {
   const [unread,   setUnread]   = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const quickQs = ['How to post ride?','Accept booking?','Get verified?','Can I cancel?','How ratings work?']
+  const quickQs = ['How do I post a ride?','How do I accept a booking?','How do I get verified?','How do I cancel a posted ride?','How do ratings work?']
 
   useEffect(() => {
     Promise.allSettled([
@@ -79,6 +79,7 @@ export default function DriverChatAI() {
             {messages.map(m => (
               <div key={m.id} style={{display:'flex',justifyContent:m.role==='ai'?'flex-start':'flex-end'}}>
                 <div style={{maxWidth:'75%',padding:'10px 14px',borderRadius:16,fontSize:14,lineHeight:1.5,
+                  whiteSpace:'pre-wrap',
                   background:m.role==='ai'?'var(--bg-card)':'var(--blue)',
                   color:m.role==='ai'?'var(--text)':'white',
                   border:m.role==='ai'?'1px solid var(--border)':'none',

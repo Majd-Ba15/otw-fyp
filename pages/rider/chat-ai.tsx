@@ -12,7 +12,7 @@ export default function RiderChatAI() {
   const [unread,   setUnread]   = useState(0)
   const bottomRef = useRef<HTMLDivElement>(null)
 
-  const quickQs = ['How do I book?','Cancel booking?','How to pay?','Request a ride?','Is it safe?']
+  const quickQs = ['How do I book a ride?','How do I cancel a booking?','How do I pay?','How do I request a ride?','How do the safety features work?']
 
   useEffect(() => {
     Promise.allSettled([
@@ -77,7 +77,7 @@ export default function RiderChatAI() {
           <div style={{flex:1,overflowY:'auto',display:'flex',flexDirection:'column',gap:12,paddingBottom:12}}>
             {messages.map(m => (
               <div key={m.id} style={{display:'flex',justifyContent:m.role==='ai'?'flex-start':'flex-end'}}>
-                <div className={m.role==='ai'?'bubble bubble-them':'bubble bubble-me'}>{m.text}</div>
+                <div className={m.role==='ai'?'bubble bubble-them':'bubble bubble-me'} style={{whiteSpace:'pre-wrap'}}>{m.text}</div>
               </div>
             ))}
             {loading && (
