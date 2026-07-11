@@ -77,7 +77,7 @@ export default function ProfileSetup() {
       photoUrl = await uploadToLocal(photo)
       if (photoUrl) {
         localStorage.setItem('otw_profile_photo', photoUrl)
-        toast.success('Photo saved locally ✓')
+        toast.success('Photo added ✓')
       }
     }
 
@@ -124,7 +124,7 @@ export default function ProfileSetup() {
             <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 500, cursor: 'pointer' }} onClick={() => fileRef.current?.click()}>
               {preview ? 'Change photo' : 'Upload profile photo (optional)'}
             </div>
-            {preview && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>Saved to device ✓</div>}
+            {preview && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>Photo added ✓</div>}
             <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhoto} />
           </div>
 
@@ -183,7 +183,7 @@ export default function ProfileSetup() {
 
           <div className="notice notice-blue" style={{ marginBottom: 16 }}>
             <span style={{ width: 16, height: 16, display: 'flex', flexShrink: 0 }}>{I.info}</span>
-            <span style={{ fontSize: 12 }}>Photos are stored locally on this server. You can always update them later from your profile.</span>
+            <span style={{ fontSize: 12 }}>You can always update your photo later from your profile.</span>
           </div>
 
           <button className="btn btn-primary btn-full btn-lg" onClick={submit} disabled={loading}>

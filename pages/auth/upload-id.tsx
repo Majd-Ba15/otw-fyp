@@ -123,7 +123,7 @@ export default function UploadId() {
       } catch (backendError: any) {
         // Backend save failed, so admin would not be able to review the ID.
         console.error('❌ Backend upload failed:', backendError.response?.data || backendError.message)
-        toast.error(backendError.response?.data?.message || 'Could not save ID photo to backend. Please try again.')
+        toast.error(backendError.response?.data?.message || 'Could not save your ID photo. Please try again.')
         setLoading(false)
         return
       }
@@ -204,7 +204,7 @@ export default function UploadId() {
           <div className="notice notice-blue" style={{ marginBottom: 20 }}>
             <span style={{ width: 16, height: 16, display: 'flex', flexShrink: 0 }}>{I.info}</span>
             <span style={{ fontSize: 12 }}>
-              Your ID is uploaded to the backend and stored for admin verification.
+              Your student ID is saved securely and sent to our team for verification.
             </span>
           </div>
 

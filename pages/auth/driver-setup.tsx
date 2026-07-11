@@ -208,7 +208,7 @@ export default function DriverSetup() {
           <div className="notice notice-blue" style={{ marginBottom: 20 }}>
             <span style={{ width: 16, height: 16, display: 'flex', flexShrink: 0 }}>{Icons.info}</span>
             <span style={{ fontSize: 12 }}>
-              Your car details are submitted to the backend. You cannot post rides until admin reviews and approves your profile.
+              Your car details are saved. You cannot post rides until admin reviews and approves your profile.
             </span>
           </div>
 
