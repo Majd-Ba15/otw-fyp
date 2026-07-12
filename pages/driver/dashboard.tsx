@@ -120,8 +120,8 @@ export default function DriverDashboard() {
             {icon:I.ticket,  label:'Requests',       href:'/driver/requests'},
             {icon:I.earnings,label:'Earnings',       href:'/driver/earnings'},
           ].map(q => (
-            <Link key={q.label} href={q.href} style={{textDecoration:'none'}}>
-              <div className="card" style={{textAlign:'center',padding:'14px 8px',margin:0,cursor:'pointer'}}>
+            <Link key={q.label} href={q.href} style={{textDecoration:'none',display:'flex'}}>
+              <div className="card" style={{textAlign:'center',padding:'14px 8px',margin:0,cursor:'pointer',width:'100%',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
                 <span style={{width:22,height:22,color:'var(--blue)',display:'flex',margin:'0 auto 6px'}}>{q.icon}</span>
                 <div style={{fontSize:12,color:'var(--text2)',fontWeight:500}}>{q.label}</div>
               </div>

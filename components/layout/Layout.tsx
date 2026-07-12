@@ -266,7 +266,7 @@ export default function Layout({ children, role, title, showBack, onBack, unread
                 </Link>
               )
             })}
-            {role === 'Admin' && (
+            {role && (
               <button
                 onClick={handleLogout}
                 className="sidebar-link"
