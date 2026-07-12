@@ -173,7 +173,15 @@ export default function RiderActiveRide() {
               <span style={{ width: 18, height: 18, display: 'flex' }}>{I.sos}</span> Emergency SOS
             </button>
             <button className="btn btn-secondary btn-full"
-              onClick={() => router.push('/rider/report')}
+              onClick={() => {
+                // Pass who + which ride is being reported so the report links to the
+                // real driver (admin can then warn/suspend/ban).
+                const drv = booking?.ride?.driver || booking?.driver
+                const driverId = booking?.ride?.driverId || drv?.userId || ''
+                const rId = booking?.ride?.rideId || booking?.rideId || ''
+                const name = drv?.fullName || ''
+                router.push(`/rider/report?userId=${driverId}&name=${encodeURIComponent(name)}&rideId=${rId}`)
+              }}
               style={{ height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
               <span style={{ width: 18, height: 18, display: 'flex' }}>{I.alert}</span> Report issue
             </button>

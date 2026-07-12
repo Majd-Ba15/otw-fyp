@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import Layout, { I } from '../../components/layout/Layout'
-import { userAPI, notifAPI, reportAPI } from '../../services/api'
+import { userAPI, notifAPI, reportAPI, bookingAPI } from '../../services/api'
 import toast from 'react-hot-toast'
 
 const LOCAL_REPORTS_KEY = 'otw_local_reports'
@@ -18,13 +18,45 @@ export default function RiderReport() {
     ride: '',
     description: '',
   })
+  const [drivers,  setDrivers]  = useState<any[]>([])   // { driverId, name, rideId, route }
+  const [selected, setSelected] = useState<any>(null)   // the chosen driver
 
   useEffect(() => {
-    Promise.allSettled([userAPI.getMe(), notifAPI.getUnreadCount()]).then(([p, n]) => {
+    // Build the driver list from rides the rider actually took (confirmed/completed
+    // bookings). Each carries the driver id + ride id we need to LINK the report so
+    // the admin can act on it.
+    Promise.allSettled([userAPI.getMe(), notifAPI.getUnreadCount(), bookingAPI.getHistory()]).then(([p, n, h]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
+      if (h.status === 'fulfilled') {
+        const list = Array.isArray(h.value.data) ? h.value.data : []
+        const seen = new Set<number>()
+        const opts: any[] = []
+        for (const b of list) {
+          if (b.status !== 'Confirmed' && b.status !== 'Completed') continue
+          const drv = b.ride?.driver
+          const driverId = drv?.userId
+          if (!driverId || seen.has(driverId)) continue
+          seen.add(driverId)
+          opts.push({ driverId, name: drv.fullName || 'Driver', rideId: b.rideId || b.ride?.rideId || 0, route: `${b.ride?.fromLocation || '?'} → ${b.ride?.toLocation || '?'}` })
+        }
+        setDrivers(opts)
+      }
     })
   }, [])
+
+  // If opened from an active ride, the driver arrives in the query — preselect it.
+  useEffect(() => {
+    if (!router.isReady) return
+    const qId = Number(router.query.userId) || 0
+    if (!qId) return
+    setSelected((cur: any) => cur || drivers.find(d => d.driverId === qId) || {
+      driverId: qId,
+      name: typeof router.query.name === 'string' ? router.query.name : 'Driver',
+      rideId: Number(router.query.rideId) || 0,
+      route: '',
+    })
+  }, [router.isReady, router.query.userId, drivers])
 
   const initials = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'AK'
 
@@ -40,6 +72,15 @@ export default function RiderReport() {
       toast.error('Add a title and report details')
       return
     }
+    // reportedUser + rideId LINK the report to the real driver so the admin can act
+    // on it (warn/suspend/ban). They come from the selected driver (or active-ride link).
+    const reportedUser = selected?.driverId || Number(router.query.userId) || 0
+    const rideId = selected?.rideId || Number(router.query.rideId) || 0
+    if (drivers.length > 0 && !reportedUser) {
+      toast.error('Select the driver you are reporting')
+      return
+    }
+    const againstName = selected?.name || form.against.trim() || 'Unknown'
 
     setLoading(true)
     const now = new Date().toISOString()
@@ -53,28 +94,33 @@ export default function RiderReport() {
       status: 'open',
       filedBy: profile?.fullName || 'Rider',
       reporterName: profile?.fullName || 'Rider',
-      against: form.against.trim() || 'Unknown',
-      reportedName: form.against.trim() || 'Unknown',
+      against: againstName,
+      reportedName: againstName,
       ride: form.ride.trim(),
       filedAt: now,
       createdAt: now,
       source: 'local-demo',
     }
 
+    // Title is folded into the statement — the backend has no separate Title column.
+    let backendOk = false
     try {
       await reportAPI.file({
-        title: localReport.title,
-        category: localReport.category,
-        description: localReport.description,
-        reportedName: localReport.reportedName,
-        ride: localReport.ride,
+        reportedUser,
+        rideId: rideId || null,
+        type: form.category,
+        statement: `${form.title.trim()} — ${form.description.trim()}`,
       })
+      backendOk = true
     } catch {
-      // Keep the demo flow working even when the backend is offline.
+      // Backend offline — fall through to the local copy so the demo still works.
     }
 
-    saveLocalReport(localReport)
-    toast.success('Report submitted')
+    // Only keep a local copy when the backend didn't take it, to avoid a duplicate
+    // sitting next to the real linked report in the admin list.
+    if (!backendOk) saveLocalReport(localReport)
+
+    toast.success(reportedUser ? 'Report submitted for admin review' : 'Report submitted')
     setLoading(false)
     router.push('/rider/dashboard')
   }
@@ -97,8 +143,19 @@ export default function RiderReport() {
               </select>
             </div>
             <div>
-              <div style={{fontSize:12,color:'var(--text3)',marginBottom:4}}>Against</div>
-              <input className="input" value={form.against} onChange={e=>setForm(p=>({...p,against:e.target.value}))} placeholder="Driver or rider name" />
+              <div style={{fontSize:12,color:'var(--text3)',marginBottom:4}}>Driver *</div>
+              {drivers.length > 0 ? (
+                <select className="input" value={selected?.driverId || ''} onChange={e => {
+                  const d = drivers.find(x => x.driverId === Number(e.target.value)) || null
+                  setSelected(d)
+                  if (d) setForm(p => ({ ...p, ride: d.route }))
+                }}>
+                  <option value="">Select a driver you rode with</option>
+                  {drivers.map(d => <option key={d.driverId} value={d.driverId}>{d.name} · {d.route}</option>)}
+                </select>
+              ) : (
+                <input className="input" value={form.against} onChange={e=>setForm(p=>({...p,against:e.target.value}))} placeholder="No completed rides yet" />
+              )}
             </div>
           </div>
 

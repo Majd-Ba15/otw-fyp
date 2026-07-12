@@ -202,7 +202,6 @@ export default function ReportDetail() {
                 <div key={label} className="card" style={{ margin:0 }}>
                   <div style={{ fontSize:12, fontWeight:600, color:'var(--text3)', textTransform:'uppercase', letterSpacing:.06, marginBottom:8 }}>{label}</div>
                   <div style={{ fontSize:13, fontWeight:600, color:'var(--text)', marginBottom:4 }}>{data?.fullName || '—'}</div>
-                  <div style={{ fontSize:12, color:'var(--text3)' }}>{data?.totalRides ?? '—'} rides · {data?.averageRating ?? '—'}★</div>
                   <div style={{ fontSize:12, color:data?.reportCount>0?'var(--red)':'var(--green)', marginTop:2 }}>{data?.reportCount||0} previous report{data?.reportCount!==1?'s':''}</div>
                 </div>
               ))}
