@@ -24,7 +24,19 @@ export default function RecurringRides() {
       notifAPI.getUnreadCount(),
     ]).then(([p, r, n]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
-      setSchedules(r.status === 'fulfilled' ? (r.value.data || []) : [])
+      // Backend rides use `rideId`, store the time inside `departureTime`, and days
+      // as a comma string. Normalise to the { id, time, recurringDays[] } shape this
+      // page (and its edit/pause/delete actions) expect.
+      setSchedules(r.status === 'fulfilled'
+        ? (r.value.data || []).map((x: any) => ({
+            ...x,
+            id: x.rideId ?? x.id,
+            time: x.time || (x.departureTime ? new Date(x.departureTime).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit', hour12: false }) : '08:00'),
+            recurringDays: Array.isArray(x.recurringDays)
+              ? x.recurringDays
+              : (typeof x.recurringDays === 'string' && x.recurringDays ? x.recurringDays.split(',').map((d: string) => d.trim()).filter(Boolean) : (x.days || [])),
+          }))
+        : [])
       if (n.status === 'fulfilled') setUnread(n.value.data?.count || 0)
       setLoading(false)
     })
@@ -60,13 +72,18 @@ export default function RecurringRides() {
     setSaving(true)
     try {
       if (editTarget) {
+        // Build a departureTime from the chosen time (same as the create path) and
+        // send days as a comma string — that's what the backend model expects.
+        const [hh, mm] = form.time.split(':')
+        const dep = new Date(); dep.setHours(parseInt(hh) || 8, parseInt(mm) || 0, 0, 0)
         await rideAPI.update(editTarget.id, {
           fromLocation:  form.from,
           toLocation:    form.to,
-          time:          form.time,
-          recurringDays: form.days,
+          departureTime: dep.toISOString(),
+          recurringDays: form.days.join(','),
           pricePerSeat:  parseFloat(form.price) || 4,
           totalSeats:    parseInt(form.seats)   || 3,
+          isRecurring:   true,
         })
         setSchedules(p => p.map(s => s.id === editTarget.id
           ? { ...s, fromLocation:form.from, toLocation:form.to, time:form.time, recurringDays:form.days, pricePerSeat:parseFloat(form.price)||4, totalSeats:parseInt(form.seats)||3 }

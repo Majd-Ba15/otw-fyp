@@ -139,7 +139,20 @@ export default function Chat() {
   })
 
   const selectedPassengerName = selectedPassenger?.rider?.fullName || selectedPassenger?.fullName
-  const otherName     = selectedPassengerName || ride?.driverName || ride?.otherUserName || (typeof queryName === 'string' ? queryName : '') || (role === 'Rider' ? 'Your driver' : 'Passenger')
+  // Resolve the other person's REAL name. Prefer the confirmed passenger / ride's
+  // driver, then fall back to the sender name carried on the actual messages — so a
+  // pending rider (not in getPassengers) still shows their name, never "Passenger".
+  const otherId = role === 'Rider'
+    ? (ride?.driver?.userId || ride?.driverId || 0)
+    : (selectedPassenger?.rider?.userId || selectedPassenger?.riderId || selectedPassenger?.userId || 0)
+  const otherFromMessages = (otherId && normalizedMessages.find((m: any) => m.senderId === otherId)?.senderName)
+    || normalizedMessages.find((m: any) => m.senderId && m.senderId !== myUserId)?.senderName
+  const otherName     = selectedPassengerName
+    || (role === 'Rider' ? ride?.driver?.fullName : '')
+    || otherFromMessages
+    || ride?.driverName || ride?.otherUserName
+    || (typeof queryName === 'string' ? queryName : '')
+    || (role === 'Rider' ? 'Your driver' : 'Passenger')
   const otherInitials = ride?.driverInitials || (otherName.split(' ').map((n:string) => n[0]).join('').slice(0,2).toUpperCase())
   const route         = ride ? `${ride.fromLocation} → ${ride.toLocation}` : ''
   const accentColor   = role === 'Driver' ? 'var(--blue)' : 'var(--green)'

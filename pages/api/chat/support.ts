@@ -56,7 +56,8 @@ DRIVER AVAILABILITY
 - A driver publishes free-time availability (date/schedule, time range, seat capacity, optional suggested price). Matching rider requests appear on the Availability page; the driver may accept a compatible request (which may auto-create the ride). Availability is not a confirmed ride. The admin does not assign drivers to riders.
 
 RECURRING RIDES
-- A driver may enable recurring rides when posting and pick weekdays, for repeated routes like regular university travel. Only describe recurrence when it is enabled for that ride, and only per the app's real behaviour.
+- A driver may enable recurring rides when posting and pick the weekdays, for repeated routes like regular university travel.
+- Manage recurring schedules on the Recurring rides page: Pause or Resume a schedule, Edit it (route, time, price, seats, days), or Delete it. Pausing hides it without deleting; resuming re-activates it. Describe recurrence only per the app's real behaviour.
 
 MULTIPLE STOPS
 - A driver may add up to SIX intermediate stops; stops appear in ride details and route info so riders can see if the ride passes near them. Do not claim unlimited stops.
@@ -146,11 +147,12 @@ async function buildUserContext(auth: string, context: string): Promise<string> 
   const lines: string[] = []
 
   if (context === 'driver') {
-    const [me, rides, bookingReqs, openDemand] = await Promise.all([
+    const [me, rides, bookingReqs, openDemand, stats] = await Promise.all([
       bget('/api/users/me', auth),
       bget('/api/rides/mine', auth),
       bget('/api/bookings/requests', auth),
       bget('/api/demand/requests/open', auth),
+      bget('/api/users/stats', auth),
     ])
     if (me) lines.push(`Driver: ${me.fullName}, ${me.isVerified ? 'verified' : 'NOT verified yet (pending admin approval)'}.`)
     const upcoming = (Array.isArray(rides) ? rides : [])
@@ -162,11 +164,16 @@ async function buildUserContext(auth: string, context: string): Promise<string> 
       : 'No upcoming posted rides.')
     if (Array.isArray(bookingReqs) && bookingReqs.length) lines.push(`Pending booking requests waiting for accept/decline: ${bookingReqs.length}.`)
     if (Array.isArray(openDemand) && openDemand.length) lines.push(`Open rider ride-requests the driver could take: ${openDemand.length} (shown on the Availability page).`)
+    if (stats) {
+      const earn = Number(stats.earnings ?? 0), wk = Number(stats.weekEarnings ?? 0), rating = Number(stats.averageRating ?? 0)
+      lines.push(`Earnings so far: $${earn.toFixed(2)} (of which $${wk.toFixed(2)} this week). Rides with bookings: ${stats.totalRides ?? 0}. Rating: ${rating > 0 ? rating.toFixed(1) + '★' : 'no ratings yet'}.`)
+    }
   } else {
-    const [me, bookings, myReqs] = await Promise.all([
+    const [me, bookings, myReqs, stats] = await Promise.all([
       bget('/api/users/me', auth),
       bget('/api/bookings/upcoming', auth),
       bget('/api/demand/requests/mine', auth),
+      bget('/api/users/stats', auth),
     ])
     if (me) lines.push(`Rider: ${me.fullName}, ${me.isVerified ? 'verified' : 'not verified yet'}.`)
     const b = (Array.isArray(bookings) ? bookings : []).slice(0, 3)
@@ -177,6 +184,10 @@ async function buildUserContext(auth: string, context: string): Promise<string> 
     const open = (Array.isArray(myReqs) ? myReqs : []).filter((r: any) => r.status === 'Open').slice(0, 2)
     if (open.length) lines.push('Open ride requests: ' + open.map((r: any) =>
       `${r.fromLocation}→${r.toLocation} ${fmtTime(r.desiredTime)} (still waiting for a driver)`).join('; '))
+    if (stats) {
+      const rating = Number(stats.averageRating ?? 0)
+      lines.push(`Rides taken (completed): ${stats.completedRides ?? 0}. Rating: ${rating > 0 ? rating.toFixed(1) + '★' : 'no ratings yet'}.`)
+    }
   }
 
   return lines.join('\n')
@@ -231,10 +242,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         system_instruction: { parts: [{ text: systemText }] },
         contents,
         generationConfig: {
-          // Slightly lower temperature + more tokens → accurate, complete
-          // numbered procedural answers without becoming overly creative.
           temperature: 0.5,
-          maxOutputTokens: 700,
+          maxOutputTokens: 1024,
+          // gemini-2.5-flash is a "thinking" model whose reasoning tokens count
+          // against maxOutputTokens — disable thinking so the whole budget goes to
+          // the visible answer (otherwise complex questions can come back empty).
+          thinkingConfig: { thinkingBudget: 0 },
         },
       }),
     })
@@ -256,17 +269,88 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 }
 
-// Offline fallback if Gemini is unreachable
+// Offline fallback when Gemini is unreachable or over quota. Kept keyword-based
+// but written as proper step-by-step answers so the assistant stays genuinely
+// useful for the common OTW questions even with zero AI quota.
 function getFallback(message: string, context: string): string {
   const s = message.toLowerCase()
   const d = context === 'driver'
-  if (/request|no ride|availab/.test(s)) return d ? "Add your free time on the Availability page — matching rider requests appear there and accepting one creates the ride automatically." : "If no ride fits, use Request Ride: set your route, time and seats — available drivers get notified and can accept."
-  if (/book|reserve/.test(s)) return d ? "Riders send booking requests from the Search page. Accept or decline them from Pending Requests." : "Go to Search, enter your route and date, pick a trip, and tap Send request to book."
-  if (/cancel/.test(s)) return d ? "Go to Manage Rides and tap Cancel Ride — passengers are notified automatically." : "Go to My Bookings and tap Cancel before the ride departs."
-  if (/post|create/.test(s)) return "Tap + Post Ride, fill in the route, time, seats, and price. Enable Recurring Ride to repeat it on set days."
-  if (/verif|approv/.test(s)) return "Driver verification takes up to 24 hours. Admin reviews your student ID and licence. You'll get an email once approved."
-  if (/rat|star/.test(s)) return "After each completed ride you'll get an email to rate. Ratings are out of 5 stars."
-  if (/pay|price|cash/.test(s)) return "OTW uses cash — passengers pay the driver directly. The driver sets the price per seat when posting."
-  if (/safe|sos/.test(s)) return "There's an SOS button on the Active Ride screen. All users are verified students."
-  return d ? "I'm your OTW driver assistant! Ask me about rides, bookings, ratings, stops, availability, or rider requests." : "I'm your OTW assistant! Ask me about booking, ride requests, payments, cancellations, or safety."
+
+  // Driver: accept/decline booking requests
+  if (d && /accept|decline|approve.*book|booking request|pending/.test(s))
+    return "To handle booking requests:\n1. Open the Requests (Pending Requests) page.\n2. Review the rider and their trip.\n3. Tap Accept to confirm the seat (the rider is notified and emailed) or Decline to free it up.\nAccepting reduces your ride's available seats."
+
+  // Ride requests / availability (driver takes them) vs (rider creates them)
+  if (/ride request|no ride|availab|free time/.test(s))
+    return d
+      ? "Publish your free time on the Availability page:\n1. Open Availability and add a slot (date, from/until time, seats, optional price).\n2. Matching rider requests appear underneath.\n3. Tap Accept request — this instantly creates the ride and books that rider."
+      : "If no ride fits, create a ride request:\n1. Open Request Ride.\n2. Enter your route, preferred time, seats and (if shown) max price.\n3. Submit — drivers with matching availability get notified. It improves matching but doesn't guarantee a driver will accept."
+
+  // Booking a seat
+  if (/book|reserve|join a ride|find a ride|search/.test(s))
+    return d
+      ? "Riders book by sending a request from Search. You approve them on the Requests page — Accept confirms the seat, Decline frees it."
+      : "To book a ride:\n1. Open Search and enter your route and date.\n2. Pick a trip and review the driver, time, seats and price.\n3. Tap Send request. It's confirmed once the driver accepts — you'll get a notification and email."
+
+  // Cancelling
+  if (/cancel/.test(s))
+    return d
+      ? "To cancel a posted ride:\n1. Open Manage Rides and select the ride.\n2. Tap Cancel Ride and confirm.\nBooked passengers are notified automatically. Cancel as early as you can — you can't cancel a ride that has already started."
+      : "To cancel a booking:\n1. Open My Bookings and select it.\n2. Tap Cancel Booking and confirm.\nYour driver is notified and the seat is freed. A completed ride can't be cancelled."
+
+  // Posting a ride
+  if (/post|create.*ride|offer.*ride|publish/.test(s))
+    return "To post a ride:\n1. Open Post Ride.\n2. Set your pickup and drop-off (you can pick them on the map and preview the road route).\n3. Choose date, time, seats and price per seat.\n4. Optionally add stops or enable Recurring.\n5. Tap Post trip — it becomes visible to riders searching your route."
+
+  // Recurring rides
+  if (/recur|repeat|schedule|weekly|every/.test(s))
+    return "Recurring rides repeat on set weekdays:\n1. When posting a ride, enable Recurring and pick the days.\n2. Manage them on the Recurring rides page — Pause/Resume, Edit (route, time, price, seats, days) or Delete. Pausing hides it without deleting."
+
+  // Stops
+  if (/stop/.test(s))
+    return "You can add up to 6 stops to a ride:\n1. Open the ride and tap Stops (or add them while posting).\n2. Tap the map to drop each stop pin, reorder if needed, and Save.\nStops show on riders' search cards and the route map."
+
+  // Start / end an active ride (driver)
+  if (d && /start|begin|active|end ride|finish|complete ride/.test(s))
+    return "Running a ride:\n1. Open the ride and tap Start Ride — this opens the live GPS map.\n2. When you reach the destination, tap Complete ride.\nCompleting it marks the trip done and prompts both of you to rate."
+
+  // Verification / approval
+  if (/verif|approv|pending|review|licen[cs]e|student id/.test(s))
+    return "Verification is done by an admin who reviews your student ID (and driving licence for drivers). It can take up to 24 hours — you'll get an email once approved or if more info is needed. Drivers can't post rides until approved."
+
+  // Ratings
+  if (/rat|star|review|feedback/.test(s))
+    return "After a completed ride, both driver and rider rate each other out of 5 stars — you'll get an email with a rate link. Your average rating shows on your profile."
+
+  // Payment / price
+  if (/pay|price|cash|cost|money|fare|charge/.test(s))
+    return "OTW is cash-only — the rider pays the driver directly, usually at the start or end of the trip. The driver sets the price per seat when posting; there are no online/card payments."
+
+  // Earnings (driver)
+  if (d && /earn|income|paid|revenue/.test(s))
+    return "Your Earnings page shows the cash from your confirmed and completed bookings (seats × price per seat), with a weekly total and a list of recent bookings."
+
+  // History
+  if (/history|past|previous/.test(s))
+    return d
+      ? "Your History page lists your finished rides (completed and cancelled). A ride becomes Completed after you run Active Ride → Complete."
+      : "Your History page lists your past bookings with their status, route, date and what you paid."
+
+  // Messaging
+  if (/message|chat|contact|talk/.test(s))
+    return "Use in-app chat to coordinate:\n1. Open Messages and tap New message.\n2. Pick the person (your driver, or a passenger on your ride).\nDrivers can also broadcast to all passengers on a ride."
+
+  // Safety / SOS
+  if (/safe|sos|emergency|danger|help/.test(s))
+    return "During an active ride there's an SOS button that alerts your emergency contact with your live location. Add contacts on the Emergency Contacts page. In a real emergency, always call local emergency services too."
+
+  // Greeting / default
+  if (/^(hi|hello|hey|salam|marhaba)\b/.test(s))
+    return d
+      ? "Hi! I'm your OTW Driver Assistant. Ask me how to post rides, accept bookings, publish availability, add stops, set up recurring rides, or get verified."
+      : "Hi! I'm your OTW Assistant. Ask me how to search and book rides, create a ride request, pay, cancel, or use the safety features."
+
+  return d
+    ? "I'm your OTW Driver Assistant. Try asking: \"How do I post a ride?\", \"How do I accept a booking?\", \"How do recurring rides work?\", or \"How do I get verified?\""
+    : "I'm your OTW Assistant. Try asking: \"How do I book a ride?\", \"How do I request a ride?\", \"How do I pay?\", or \"How do I cancel a booking?\""
 }

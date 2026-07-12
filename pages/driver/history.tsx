@@ -12,11 +12,14 @@ export default function DriverHistory() {
   useEffect(() => {
     Promise.allSettled([
       userAPI.getMe(),
-      rideAPI.getMine('completed'),
+      rideAPI.getMine(),
       notifAPI.getUnreadCount(),
     ]).then(([p, r, n]) => {
       if (p.status === 'fulfilled') setProfile(p.value.data)
-      if (r.status === 'fulfilled') setRides(r.value.data || [])
+      // History = finished rides only (Completed or Cancelled). Active/upcoming
+      // rides live on "My rides"; fetching only "completed" left this page — and
+      // the Cancelled tab — permanently empty.
+      if (r.status === 'fulfilled') setRides((r.value.data || []).filter((x:any) => x.status === 'Completed' || x.status === 'Cancelled'))
       else setRides([
         { rideId:1, fromLocation:'UTM Main Gate', toLocation:'City Centre',   departureTime:'2024-01-09T08:00:00', passengerCount:0, totalEarnings:0, averageRating:4.8, status:'Completed' },
       ])
@@ -27,7 +30,7 @@ export default function DriverHistory() {
 
   const initials      = profile?.fullName?.split(' ').map((n:string)=>n[0]).join('').slice(0,2).toUpperCase() || 'SM'
   const filtered      = tab === 'All' ? rides : rides.filter(r=>r.status===tab)
-  const confirmedRides = rides.filter(r=>r.status==='Completed' || r.status==='Confirmed').length
+  const completedRides = rides.filter(r=>r.status==='Completed').length
 
   return (
     <Layout role="Driver" userInitials={initials} unreadCount={unread}>
@@ -44,8 +47,8 @@ export default function DriverHistory() {
 
         <div style={{display:'grid',gridTemplateColumns:'1fr',gap:10,marginBottom:16}}>
           <div className="stat-card">
-            <div style={{fontSize:28,fontWeight:700,color:'var(--text)'}}>{confirmedRides}</div>
-            <div className="stat-label">Confirmed Rides</div>
+            <div style={{fontSize:28,fontWeight:700,color:'var(--text)'}}>{completedRides}</div>
+            <div className="stat-label">Rides completed</div>
           </div>
         </div>
 
